@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vyapar Partner WhatsApp Automation Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js for Interactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Eruda Mobile Console for Debugging -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        whatsapp: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .chat-bubble-shadow { box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13); }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white" 
+      x-data="whatsappApp()" x-init="init()">
+
+    <div class="min-h-full flex flex-col">
+        <!-- Top Navigation Bar -->
+        <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-whatsapp-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-lg shadow-whatsapp-600/20">
+                        <i class="fa-brands fa-whatsapp text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="font-bold text-lg tracking-tight text-white">Vyapar Partner Suite</h1>
+                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.2 Queue Edition</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Automated SME Lead Generation & Sequential Broadcast Console</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex items-center space-x-2 bg-slate-700/60 border border-slate-600/50 px-3 py-1.5 rounded-lg text-xs">
+                        <span class="text-slate-400">Partner Code:</span>
+                        <span class="font-mono font-semibold text-whatsapp-400 bg-whatsapp-950/50 px-2 py-0.5 rounded border border-whatsapp-500/20" x-text="partnerCode"></span>
+                        <button @click="copyCode()" class="text-slate-400 hover:text-white transition" title="Copy Code">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <div class="hidden md:flex items-center space-x-4 bg-slate-900/80 px-4 py-1.5 rounded-lg border border-slate-700 text-xs">
+                        <div>
+                            <span class="text-slate-400">Leads:</span> 
+                            <span class="font-bold text-white" x-text="leads.length"></span>
+                        </div>
+                        <div class="w-px h-3 bg-slate-700"></div>
+                        <div>
+                            <span class="text-slate-400">Est. Comm:</span> 
+                            <span class="font-bold text-whatsapp-400">₹<span x-text="(leads.length * 450).toLocaleString()"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Layout -->
+        <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-6">
+            
+            <!-- Left Column: Controls & Sequential Queue -->
+            <div class="w-full lg:w-5/12 flex flex-col space-y-6">
+                
+                <!-- Tab Buttons -->
+                <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-700/80 flex space-x-1 shadow-sm">
+                    <button @click="activeTab = 'leads'" 
+                            :class="activeTab === 'leads' ? 'bg-brand-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'"
+                            class="flex-1 py-2 px-3 rounded-lg font-medium text-xs sm:text-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-users-line"></i>
+                        <span>1. Leads CRM</span>
+                    </button>
+                    <button @click="activeTab = 'studio'" 
+                            :class="activeTab === 'studio' ? 'bg-brand-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'"
+                            class="flex-1 py-2 px-3 rounded-lg font-medium text-xs sm:text-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-pen-nib"></i>
+                        <span>2. Studio</span>
+                    </button>
+                    <button @click="activeTab = 'broadcast'" 
+                            :class="activeTab === 'broadcast' ? 'bg-brand-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'"
+                            class="flex-1 py-2 px-3 rounded-lg font-medium text-xs sm:text-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>3. Queue Dispatch</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Leads CRM -->
+                <div x-show="activeTab === 'leads'" x-cloak class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-base text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-address-book text-brand-400"></i>
+                            <span>SME Niche & Leads Database</span>
+                        </h2>
+                        <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded-md" x-text="filteredLeads.length + ' contacts'"></span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">Filter by SME Niche:</label>
+                            <select x-model="selectedNiche" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                                <option value="all">All Niches</option>
+                                <option value="Retail & Kirana">Retail Stores & Kirana Outlets</option>
+                                <option value="Pharmacies">Pharmacies & Chemist Shops</option>
+                                <option value="Wholesalers">Apparel & FMCG Wholesalers</option>
+                                <option value="Services & CAs">Service Providers & CAs</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <input type="text" x-model="searchQuery" placeholder="Search name or city..." 
+                                   class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 min-w-[140px]">
+                            
+                            <input type="file" id="csvFileInput" @change="importFromCSV($event)" accept=".csv" class="hidden">
+                            <button @click="document.getElementById('csvFileInput').click()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center space-x-1">
+                                <i class="fa-solid fa-file-arrow-up"></i>
+                                <span class="hidden sm:inline">Import</span>
+                            </button>
+                            <button @click="exportToCSV()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center space-x-1">
+                                <i class="fa-solid fa-file-arrow-down"></i>
+                                <span class="hidden sm:inline">Export</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="max-h-72 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        <template x-for="lead in filteredLeads" :key="lead.id">
+                            <div class="bg-slate-900/60 border border-slate-700/60 hover:border-slate-600 p-3 rounded-xl flex items-center justify-between transition">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-semibold text-sm text-white" x-text="lead.name"></span>
+                                        <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700" x-text="lead.business"></span>
+                                    </div>
+                                    <div class="text-xs text-slate-400 flex items-center space-x-3">
+                                        <span><i class="fa-solid fa-phone text-[10px] mr-1"></i><span x-text="lead.phone"></span></span>
+                                        <span><i class="fa-solid fa-location-dot text-[10px] mr-1"></i><span x-text="lead.city"></span></span>
+                                    </div>
+                                </div>
+                                <button @click="openSingleWhatsApp(lead)" class="bg-whatsapp-600 hover:bg-whatsapp-700 text-white px-2.5 py-1.5 rounded-lg text-xs flex items-center space-x-1">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                    <span>Send</span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Message Studio -->
+                <div x-show="activeTab === 'studio'" x-cloak class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-base text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
+                            <span>Message Studio & Copywriter</span>
+                        </h2>
+                        <select x-model="selectedLang" @change="loadTemplate()" class="bg-slate-900 border border-slate-700 rounded-lg text-xs px-2 py-1 text-slate-200">
+                            <option value="en">English</option>
+                            <option value="hi">Hindi (हिन्दी)</option>
+                            <option value="hinglish">Hinglish</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Select Template Angle:</label>
+                        <select x-model="selectedTemplateKey" @change="loadTemplate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="retail">Retail / Kirana - Fast POS & Thermal Billing</option>
+                            <option value="pharmacy">Pharmacy - Expiry & Batch Tracking</option>
+                            <option value="wholesale">Wholesaler - WhatsApp Payment Reminders</option>
+                            <option value="service">Service / CA - GSTR & Estimate Generator</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-400 mb-1 block">Message Content (Live Editable):</label>
+                        <textarea x-model="messageText" rows="7" 
+                                  class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 leading-relaxed"></textarea>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Sequential Queue Engine -->
+                <div x-show="activeTab === 'broadcast'" x-cloak class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-base text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-brand-400"></i>
+                            <span>One-By-One Queue Dispatcher</span>
+                        </h2>
+                        <span class="text-xs bg-whatsapp-950 text-whatsapp-400 border border-whatsapp-500/20 px-2 py-0.5 rounded font-mono" 
+                              x-text="(queueIndex + 1) + ' / ' + filteredLeads.length"></span>
+                    </div>
+
+                    <!-- Active Lead Card -->
+                    <template x-if="currentQueueLead">
+                        <div class="bg-slate-900/90 border border-brand-500/40 rounded-xl p-4 space-y-3 shadow-lg">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] uppercase tracking-wider text-brand-400 font-bold">Current Target</span>
+                                    <h3 class="font-bold text-lg text-white" x-text="currentQueueLead.name"></h3>
+                                    <p class="text-xs text-slate-400" x-text="currentQueueLead.business + ' • ' + currentQueueLead.city"></p>
+                                </div>
+                                <span class="text-xs font-mono bg-slate-800 text-slate-300 px-2 py-1 rounded" x-text="currentQueueLead.phone"></span>
+                            </div>
+
+                            <!-- Single Tab Action Button -->
+                            <button @click="dispatchNextInQueue()" 
+                                    class="w-full bg-whatsapp-600 hover:bg-whatsapp-700 text-white font-medium py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-whatsapp-600/20">
+                                <i class="fa-brands fa-whatsapp text-lg"></i>
+                                <span x-text="'Open WhatsApp Chat for ' + currentQueueLead.name"></span>
+                            </button>
+                        </div>
+                    </template>
+
+                    <template x-if="!currentQueueLead">
+                        <div class="bg-slate-900/40 border border-slate-700/60 rounded-xl p-6 text-center text-slate-400 text-sm">
+                            🎉 Queue completed! All leads in this segment have been contacted.
+                            <button @click="queueIndex = 0" class="block mx-auto mt-3 text-xs text-brand-400 hover:underline">Reset Queue</button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Live Log Terminal -->
+                <div class="bg-slate-800/90 rounded-2xl border border-slate-700 p-4 flex flex-col space-y-3 shadow-xl">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold text-slate-300 flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-whatsapp-500"></span>
+                            <span>Execution Log</span>
+                        </span>
+                        <button @click="logs = []" class="text-slate-400 hover:text-white">Clear</button>
+                    </div>
+                    <div class="bg-slate-900 rounded-xl p-3 h-32 overflow-y-auto font-mono text-[11px] text-slate-300 space-y-1.5 custom-scrollbar border border-slate-700/80">
+                        <template x-for="log in logs">
+                            <div x-text="log" :class="{ 'text-whatsapp-400': log.includes('Success') || log.includes('Opened'), 'text-slate-400': log.includes('Queue') }"></div>
+                        </template>
+                        <div x-show="logs.length === 0" class="text-slate-500 italic text-center py-6">
+                            Queue logs will appear here...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Device Preview -->
+            <div class="w-full lg:w-7/12 flex flex-col">
+                <div class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col h-full shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-mobile-screen-button text-brand-400"></i>
+                            <h2 class="font-semibold text-base text-white">Live WhatsApp Device Preview</h2>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 bg-[#0b141a] rounded-2xl border border-slate-700 overflow-hidden flex flex-col relative shadow-inner min-h-[480px]">
+                        <div class="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-slate-700/60 z-10">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center font-bold text-white shadow">
+                                    <span x-text="(currentQueueLead || activePreviewLead).name.charAt(0)"></span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-semibold text-slate-100" x-text="(currentQueueLead || activePreviewLead).name"></h4>
+                                    <p class="text-[11px] text-whatsapp-400" x-text="(currentQueueLead || activePreviewLead).business"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 p-4 bg-[#0b141a] overflow-y-auto space-y-4 flex flex-col justify-end">
+                            <div class="self-end max-w-[85%] bg-[#005c4b] text-slate-100 rounded-2xl rounded-tr-sm p-3.5 chat-bubble-shadow text-xs sm:text-sm space-y-3">
+                                <div class="whitespace-pre-line leading-relaxed" x-html="renderedPreviewText"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        function whatsappApp() {
+            return {
+                activeTab: 'broadcast',
+                partnerCode: 'ZNNQ2XK',
+                selectedNiche: 'all',
+                searchQuery: '',
+                selectedLang: 'en',
+                selectedTemplateKey: 'retail',
+                queueIndex: 0,
+                logs: [],
+                leads: [],
+
+                defaultLeads: [
+                    { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', city: 'Local', niche: 'Services & CAs' },
+                    { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', city: 'Local', niche: 'Services & CAs' },
+                    { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', city: 'Local', niche: 'Services & CAs' }
+                ],
+
+                templates: {
+                    retail: {
+                        en: `Fast-track your counter billing and stock updates with Vyapar App!
+
+Dear {{owner_name}},
+Are long bill queues turning away your customers at {{business_name}}?
+
+Transform your phone into a POS counter:
+• Fast thermal receipt printing
+• Barcode scanning & low stock alerts
+
+Claim your free trial & partner discount:
+🔗 {{partner_link}}`
+                    }
+                },
+
+                messageText: '',
+
+                init() {
+                    this.loadLeadsFromStorage();
+                    this.loadTemplate();
+                },
+
+                loadLeadsFromStorage() {
+                    const saved = localStorage.getItem('vyapar_partner_leads');
+                    if (saved) {
+                        try { this.leads = JSON.parse(saved); } catch(e) { this.leads = [...this.defaultLeads]; }
+                    } else {
+                        this.leads = [...this.defaultLeads];
+                    }
+                },
+
+                saveLeadsToStorage() {
+                    localStorage.setItem('vyapar_partner_leads', JSON.stringify(this.leads));
+                },
+
+                get filteredLeads() {
+                    return this.leads.filter(lead => {
+                        const matchesNiche = this.selectedNiche === 'all' || lead.niche === this.selectedNiche;
+                        const matchesSearch = lead.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                                              lead.business.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        return matchesNiche && matchesSearch;
+                    });
+                },
+
+                get currentQueueLead() {
+                    return this.filteredLeads[this.queueIndex] || null;
+                },
+
+                get activePreviewLead() {
+                    return this.currentQueueLead || this.filteredLeads[0] || { name: 'Sample', business: 'Sample Store' };
+                },
+
+                get renderedPreviewText() {
+                    let text = this.messageText;
+                    const lead = this.activePreviewLead;
+                    const link = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
+                    text = text.replace(/\{\{owner_name\}\}/g, lead.name).replace(/\{\{business_name\}\}/g, lead.business).replace(/\{\{partner_link\}\}/g, link);
+                    return text.replace(/\n/g, '<br>');
+                },
+
+                loadTemplate() {
+                    this.messageText = this.templates.retail.en;
+                },
+
+                formatPhoneNumber(phoneStr) {
+                    let cleaned = (phoneStr || '').replace(/\D/g, '');
+                    if (cleaned.length === 10) cleaned = '91' + cleaned;
+                    return cleaned;
+                },
+
+                openSingleWhatsApp(lead) {
+                    const phone = this.formatPhoneNumber(lead.phone);
+                    const link = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
+                    let text = this.messageText.replace(/\{\{owner_name\}\}/g, lead.name).replace(/\{\{business_name\}\}/g, lead.business).replace(/\{\{partner_link\}\}/g, link);
+                    window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+                },
+
+                dispatchNextInQueue() {
+                    if (!this.currentQueueLead) return;
+                    const lead = this.currentQueueLead;
+                    this.openSingleWhatsApp(lead);
+                    this.logs.push(`[Opened]: Launched tab for ${lead.name} (${lead.phone})`);
+                    this.queueIndex++;
+                },
+
+                exportToCSV() {
+                    let csv = 'ID,Name,Business,Phone,City,Niche\n';
+                    this.leads.forEach(l => { csv += `"${l.id}","${l.name}","${l.business}","${l.phone}","${l.city}","${l.niche}"\n`; });
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = 'vyapar_leads_export.csv';
+                    a.click();
+                },
+
+                importFromCSV(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const lines = e.target.result.split('\n');
+                        lines.slice(1).forEach((line, i) => {
+                            if (!line.trim()) return;
+                            const cols = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+                            if (cols.length >= 4) {
+                                this.leads.push({
+                                    id: Date.now() + i,
+                                    name: cols[1] || cols[0],
+                                    business: cols[2] || cols[1],
+                                    phone: cols[3] || '',
+                                    city: cols[4] || 'Local',
+                                    niche: cols[5] || 'Services & CAs'
+                                });
+                            }
+                        });
+                        this.saveLeadsToStorage();
+                        this.queueIndex = 0;
+                        alert('Leads imported successfully!');
+                    };
+                    reader.readAsText(file);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
