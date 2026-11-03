@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vyapar AutoPromote Suite - WhatsApp Campaign Automation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: { deep: '#0b192c', navy: '#1e3a8a', accent: '#f59e0b', light: '#eff6ff' },
+            wa: { teal: '#075E54', green: '#25D366', light: '#DCF8C6', dark: '#128C7E', bg: '#E5DDD5', darkbg: '#0b141a', darkbubble: '#005c4b' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+    .wa-bg-pattern {
+      background-color: #efeae2;
+      background-image: radial-gradient(#075e54 0.5px, transparent 0.5px), radial-gradient(#075e54 0.5px, #efeae2 0.5px);
+      background-size: 18px 18px;
+      background-position: 0 0, 9px 9px;
+    }
+    .dark .wa-bg-pattern {
+      background-color: #0b141a;
+      background-image: radial-gradient(#25d366 0.5px, transparent 0.5px), radial-gradient(#25d366 0.5px, #0b141a 0.5px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Main Navigation Bar -->
+  <header class="bg-gradient-to-r from-brand-deep via-wa-teal to-wa-dark text-white shadow-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- App Title & Branding -->
+        <div class="flex items-center space-x-3">
+          <div class="bg-white text-wa-teal p-2 rounded-xl shadow-md font-extrabold text-xl flex items-center justify-center h-10 w-10">
+            <i class="fa-brands fa-whatsapp text-wa-green text-2xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="font-extrabold text-lg tracking-tight">Vyapar AutoPromote</h1>
+              <span class="bg-amber-400 text-slate-900 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Partner Pro</span>
+            </div>
+            <p class="text-xs text-teal-200">WhatsApp Targeted Automation & Affiliate Conversion Engine</p>
+          </div>
+        </div>
+
+        <!-- Right Side Controls -->
+        <div class="flex items-center space-x-3">
+          <div class="hidden md:flex items-center bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 text-xs space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-teal-100">Partner Code: <strong class="text-amber-300 font-mono tracking-wider">ZNNQ2XK</strong></span>
+            <button onclick="copyPartnerCode()" class="ml-1 text-teal-200 hover:text-white" title="Copy Code"><i class="fa-regular fa-copy"></i></button>
+          </div>
+
+          <button onclick="switchView('dashboard')" id="nav-btn-dashboard" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-pie"></i> <span class="hidden sm:inline">Analytics</span>
+          </button>
+
+          <button id="themeToggle" class="p-2 rounded-lg bg-black/20 hover:bg-black/30 text-teal-100 transition" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon text-sm"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+    <!-- VIEW 1: CAMPAIGN BUILDER & SIMULATOR (MAIN WORKSPACE) -->
+    <div id="view-workspace" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT COLUMN: CONTROL TABS & CONFIGURATION (5 Cols) -->
+      <div class="lg:col-span-5 flex flex-col gap-5">
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-white dark:bg-slate-800 rounded-2xl p-1.5 shadow-sm border border-slate-200 dark:border-slate-700 flex gap-1">
+          <button onclick="switchTab('templates')" id="tab-btn-templates" class="tab-btn flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition bg-wa-teal text-white shadow">
+            <i class="fa-solid fa-file-signature"></i> 1. Message Template
+          </button>
+          <button onclick="switchTab('audience')" id="tab-btn-audience" class="tab-btn flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i class="fa-solid fa-users-gear"></i> 2. SME Leads (<span id="lead-count-badge">5</span>)
+          </button>
+          <button onclick="switchTab('automation')" id="tab-btn-automation" class="tab-btn flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i class="fa-solid fa-clock-rotate-left"></i> 3. Sequence
+          </button>
+        </nav>
+
+        <!-- TAB 1: TEMPLATE BUILDER -->
+        <div id="tab-templates" class="tab-content bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-4">
+          <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-wand-magic-sparkles text-wa-teal dark:text-wa-green"></i> Template Configuration
+            </h2>
+            
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] text-slate-500 font-semibold">Language:</label>
+              <select id="langSelector" onchange="handleLangOrNicheChange()" class="text-xs border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-lg p-1 font-medium text-slate-700 dark:text-slate-200">
+                <option value="hi">Hindi (हिंदी)</option>
+                <option value="en">English</option>
+                <option value="hinglish">Hinglish</option>
+                <option value="mr">Marathi (मराठी)</option>
+                <option value="gu">Gujarati (ગુજરાતી)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Niche Selection Header -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Target SME Category Preset</label>
+            <select id="nichePresetSelector" onchange="handleLangOrNicheChange()" class="w-full text-xs border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-xl p-2.5 font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-wa-teal">
+              <option value="kirana">Kirana & Retail Outlets (POS & Fast Counter Billing)</option>
+              <option value="wholesale">Wholesalers & Distributors (Udhar Reminders & Ledgers)</option>
+              <option value="pharmacy">Pharmacies & Chemist Shops (Batch Expiry Tracking)</option>
+              <option value="services">Services & Contractors (Quotation to Invoice Conversion)</option>
+              <option value="ca">CAs & Tax Consultants (Client GST Compliance)</option>
+            </select>
+          </div>
+
+          <!-- Dynamic Placeholder Insert Tags -->
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Click to Insert Dynamic Placeholders:</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="insertTag('{{owner_name}}')" class="text-[11px] bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 px-2 py-0.5 rounded-md hover:bg-teal-100 transition font-mono">+ {{owner_name}}</button>
+              <button onclick="insertTag('{{business_name}}')" class="text-[11px] bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 px-2 py-0.5 rounded-md hover:bg-teal-100 transition font-mono">+ {{business_name}}</button>
+              <button onclick="insertTag('{{pending_amount}}')" class="text-[11px] bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 px-2 py-0.5 rounded-md hover:bg-teal-100 transition font-mono">+ {{pending_amount}}</button>
+              <button onclick="insertTag('{{partner_code}}')" class="text-[11px] bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-md hover:bg-amber-100 transition font-mono">+ {{partner_code}}</button>
+              <button onclick="insertTag('{{partner_link}}')" class="text-[11px] bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-md hover:bg-blue-100 transition font-mono">+ {{partner_link}}</button>
+            </div>
+          </div>
+
+          <!-- Template Textarea -->
+          <div>
+            <label for="templateBody" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Message Body (Supports WhatsApp Formatting: *bold*, _italic_)</label>
+            <textarea id="templateBody" rows="7" oninput="updateLivePreview()" class="w-full text-xs p-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-wa-teal dark:text-slate-100 font-sans transition" placeholder="Type template body..."></textarea>
+          </div>
+
+          <!-- Quick Action Buttons Setup -->
+          <div class="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-700">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">WhatsApp Call-To-Action Buttons</label>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="btn1Text" oninput="updateLivePreview()" value="⚡ Download Vyapar Free" class="text-xs p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Button 1 Label">
+              <input type="text" id="btn2Text" oninput="updateLivePreview()" value="💬 Chat with CA Support" class="text-xs p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Button 2 Label">
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: AUDIENCE / CRM LEADS MANAGER -->
+        <div id="tab-audience" class="tab-content hidden bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-4">
+          <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-users text-wa-teal dark:text-wa-green"></i> Target Lead Directory
+            </h2>
+            <div class="flex items-center gap-2">
+              <button onclick="importSampleLeadsCSV()" class="text-[11px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition">
+                <i class="fa-solid fa-file-csv text-emerald-600"></i> Import Sample
+              </button>
+              <button onclick="openAddLeadModal()" class="text-[11px] bg-wa-teal hover:bg-teal-700 text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition font-semibold">
+                <i class="fa-solid fa-user-plus text-[10px]"></i> Add Contact
+              </button>
+            </div>
+          </div>
+
+          <!-- Niche Filter -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 font-medium">Filter Niche:</span>
+            <select id="nicheFilter" onchange="renderAudienceList()" class="text-xs border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-lg p-1.5 text-slate-800 dark:text-slate-200 flex-1">
+              <option value="ALL">All SME Categories</option>
+              <option value="Kirana & Retail">Kirana & Retail</option>
+              <option value="Wholesale & FMCG">Wholesale & FMCG</option>
+              <option value="Pharmacy & Chemist">Pharmacy & Chemist</option>
+              <option value="Services & Repair">Services & Repair</option>
+              <option value="CA & Tax Consultant">CA & Tax Consultant</option>
+            </select>
+          </div>
+
+          <!-- Scrollable Contact List -->
+          <div id="audienceListContainer" class="flex-1 overflow-y-auto max-h-[380px] space-y-2 pr-1">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- TAB 3: AUTOMATION SEQUENCER -->
+        <div id="tab-automation" class="tab-content hidden bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-4">
+          <div class="pb-3 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-gears text-wa-teal dark:text-wa-green"></i> Anti-Spam Sending Throttle & Drip
+            </h2>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Message Dispatch Delay (Anti-Block Guard)</label>
+                <span id="delayVal" class="text-xs font-bold text-wa-teal dark:text-wa-green">3 Seconds</span>
+              </div>
+              <input type="range" id="delaySlider" min="1" max="8" value="3" oninput="document.getElementById('delayVal').innerText = this.value + ' Seconds'" class="w-full accent-wa-teal">
+              <p class="text-[11px] text-slate-400 mt-1">Randomized delay range avoids triggering WhatsApp bulk broadcast detection algorithms.</p>
+            </div>
+
+            <div class="border-t border-slate-100 dark:border-slate-700 pt-3">
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">Multi-Step Drip Follow-Up Sequence</label>
+              
+              <div class="space-y-2">
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-wa-teal text-white flex items-center justify-center text-xs font-bold">1</div>
+                  <div class="flex-1">
+                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Instant Broadcast</div>
+                    <div class="text-[10px] text-slate-400">Niche Value Pitch + Partner Link Offer</div>
+                  </div>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded font-bold">Active</span>
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-3 opacity-80">
+                  <div class="w-6 h-6 rounded-full bg-slate-400 text-white flex items-center justify-center text-xs font-bold">2</div>
+                  <div class="flex-1">
+                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Day +2 Follow-Up</div>
+                    <div class="text-[10px] text-slate-400">Demo Video: "Generate GST Bill in 10 Seconds"</div>
+                  </div>
+                  <span class="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">Auto-Trigger</span>
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-3 opacity-80">
+                  <div class="w-6 h-6 rounded-full bg-slate-400 text-white flex items-center justify-center text-xs font-bold">3</div>
+                  <div class="flex-1">
+                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Day +5 Expiry Alert</div>
+                    <div class="text-[10px] text-slate-400">"Partner Code ZNNQ2XK discount expires tonight!"</div>
+                  </div>
+                  <span class="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">Auto-Trigger</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: LIVE WHATSAPP MOCKUP & SIMULATOR CONSOLE (7 Cols) -->
+      <div class="lg:col-span-7 flex flex-col gap-5">
+
+        <!-- Top Row: Interactive Phone Preview & Lead Launcher -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+
+          <!-- Smartphone Screen Simulator (6 Cols) -->
+          <div class="md:col-span-6 flex flex-col items-center">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-mobile-screen text-wa-teal dark:text-wa-green"></i> Live Device UI Mockup
+            </div>
+
+            <!-- Outer Phone Frame -->
+            <div class="w-full max-w-[310px] h-[490px] bg-slate-900 rounded-[38px] p-3 shadow-2xl border-4 border-slate-700 flex flex-col relative overflow-hidden">
+              <!-- Speaker Notch -->
+              <div class="w-28 h-4 bg-slate-800 rounded-b-xl mx-auto absolute top-3 left-1/2 -translate-x-1/2 z-20 flex justify-center items-center">
+                <div class="w-2.5 h-2.5 rounded-full bg-slate-950"></div>
+              </div>
+
+              <!-- Header Bar -->
+              <div class="bg-wa-teal text-white pt-5 pb-2 px-3 rounded-t-[24px] flex items-center justify-between z-10 shadow">
+                <div class="flex items-center space-x-2">
+                  <i class="fa-solid fa-arrow-left text-xs"></i>
+                  <div class="w-7 h-7 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center font-extrabold text-xs shadow-inner" id="previewAvatar">
+                    R
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold leading-tight" id="previewRecipientName">Rajesh Sharma</h4>
+                    <p class="text-[9px] text-teal-200" id="previewBusinessName">Sharma Kirana Stores</p>
+                  </div>
+                </div>
+                <div class="flex space-x-2.5 text-xs text-teal-100">
+                  <i class="fa-solid fa-video"></i>
+                  <i class="fa-solid fa-phone"></i>
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </div>
+              </div>
+
+              <!-- Chat Wallpaper & Messages Container -->
+              <div class="flex-1 wa-bg-pattern p-3 overflow-y-auto flex flex-col justify-end space-y-2 text-xs">
+                
+                <div class="text-center">
+                  <span class="bg-white/80 dark:bg-slate-800/80 text-[9px] text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded shadow-sm font-medium">Today</span>
+                </div>
+
+                <!-- Rich Header Card (Product Banner Preview) -->
+                <div class="self-end bg-wa-light dark:bg-wa-darkbubble text-slate-800 dark:text-slate-100 rounded-xl p-2.5 max-w-[90%] shadow-sm border border-emerald-200/50 dark:border-emerald-800/40 space-y-2">
+                  
+                  <div class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-lg p-2.5 text-white shadow">
+                    <div class="flex justify-between items-center">
+                      <span class="text-[9px] font-bold bg-amber-400 text-slate-900 px-1.5 py-0.5 rounded">VYAPAR APP</span>
+                      <i class="fa-solid fa-shield-halved text-amber-300 text-xs"></i>
+                    </div>
+                    <div class="font-extrabold text-xs mt-1">Official Partner Special</div>
+                    <div class="text-[10px] text-slate-200">Use Code: <span class="font-mono text-amber-300 font-bold">ZNNQ2XK</span></div>
+                  </div>
+
+                  <!-- Dynamic Text Body -->
+                  <p id="whatsappMessagePreview" class="whitespace-pre-wrap break-words text-[11.5px] leading-relaxed"></p>
+
+                  <!-- Time & Blue Double Checkmark -->
+                  <div class="text-[9px] text-slate-500 dark:text-emerald-200/80 text-right mt-1 flex items-center justify-end space-x-1">
+                    <span id="previewTime">10:42 AM</span>
+                    <i id="previewCheckmark" class="fa-solid fa-check-double text-blue-500 text-[10px]"></i>
+                  </div>
+
+                  <!-- Interactive Action Buttons -->
+                  <div id="buttonsPreviewContainer" class="border-t border-emerald-200/60 dark:border-emerald-700/60 pt-1.5 flex flex-col gap-1">
+                    <!-- JS Injected -->
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Input Bar Mockup -->
+              <div class="bg-slate-800 p-2 rounded-b-[24px] flex items-center space-x-2 text-slate-400 text-xs">
+                <i class="fa-regular fa-face-smile"></i>
+                <div class="flex-1 bg-slate-700 rounded-full h-6 px-3 text-[10px] flex items-center text-slate-400">Type a message</div>
+                <i class="fa-solid fa-paperclip"></i>
+                <div class="w-6 h-6 rounded-full bg-wa-green text-slate-900 flex items-center justify-center text-[10px]">
+                  <i class="fa-solid fa-microphone"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls & Active Lead Picker (6 Cols) -->
+          <div class="md:col-span-6 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5 mb-1">
+                <i class="fa-solid fa-play text-amber-500"></i> Active Campaign Launcher
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Select test contact to preview real-time template parameters before running batch dispatch.</p>
+            </div>
+
+            <!-- Active Recipient Select -->
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Active Test Target Lead</label>
+              <select id="activeLeadSelect" onchange="changeActiveTestLead()" class="w-full text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg p-2 font-bold text-slate-800 dark:text-slate-100">
+                <!-- JS Rendered -->
+              </select>
+
+              <!-- Lead Meta Details -->
+              <div id="leadMetaCard" class="text-[11px] grid grid-cols-2 gap-2 text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-700/60">
+                <!-- JS Rendered -->
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+              <button id="btnRunCampaign" onclick="startCampaignExecution()" class="w-full py-3 px-4 bg-wa-green hover:bg-emerald-500 text-slate-900 font-extrabold rounded-xl shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm transition transform active:scale-95">
+                <i class="fa-solid fa-paper-plane"></i> Launch Broadcast Simulation
+              </button>
+              <button id="btnStopCampaign" onclick="stopCampaignExecution()" disabled class="w-full py-2 px-4 bg-red-100 text-red-700 border border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition opacity-50 cursor-not-allowed">
+                <i class="fa-solid fa-pause"></i> Pause Batch Dispatch
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Terminal Execution Console & Meters -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+          
+          <!-- Live Metrics Bar -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-[10px] text-slate-400 font-bold uppercase">Messages Sent</span>
+              <div id="statSent" class="text-xl font-extrabold text-slate-800 dark:text-white mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-[10px] text-slate-400 font-bold uppercase">Delivered</span>
+              <div id="statDelivered" class="text-xl font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-[10px] text-slate-400 font-bold uppercase">Read Rate</span>
+              <div id="statRead" class="text-xl font-extrabold text-emerald-600 dark:text-wa-green mt-0.5">0%</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-[10px] text-slate-400 font-bold uppercase">Partner Conversions</span>
+              <div id="statClicks" class="text-xl font-extrabold text-amber-500 mt-0.5">0</div>
+            </div>
+          </div>
+
+          <!-- Console Terminal Output -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-terminal text-wa-teal dark:text-wa-green"></i> System Delivery Logs
+              </span>
+              <span id="terminalStatus" class="text-[10px] text-slate-400 font-mono">STATUS: IDLE</span>
+            </div>
+            <div id="terminalLog" class="bg-slate-950 text-emerald-400 font-mono text-[11px] p-3 rounded-xl h-36 overflow-y-auto space-y-1 shadow-inner border border-slate-800">
+              <div class="text-slate-500">[System Ready] Partner campaign console initialized. Click "Launch Broadcast Simulation" to test dispatch...</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- VIEW 2: PERFORMANCE & ANALYTICS DASHBOARD (TOGGLEABLE) -->
+    <div id="view-dashboard" class="hidden flex-col gap-6">
+      
+      <div class="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div>
+          <h2 class="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-wa-teal dark:text-wa-green"></i> Partner Conversion & Earnings Analytics
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Tracking Vyapar app affiliate attribution for code: <strong class="text-amber-500">ZNNQ2XK</strong></p>
+        </div>
+        <button onclick="switchView('workspace')" class="px-3 py-1.5 bg-wa-teal text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-left"></i> Back to Campaign Suite
+        </button>
+      </div>
+
+      <!-- Overview Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase">Total Leads Targeted</span>
+            <i class="fa-solid fa-users text-blue-500"></i>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 dark:text-white">1,420</div>
+          <p class="text-[11px] text-emerald-500 font-semibold mt-1">↑ 18% this week</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase">App Installs Triggered</span>
+            <i class="fa-solid fa-download text-emerald-500"></i>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 dark:text-white">384</div>
+          <p class="text-[11px] text-emerald-500 font-semibold mt-1">27.0% install rate</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase">Paid License Conversions</span>
+            <i class="fa-solid fa-sack-dollar text-amber-500"></i>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 dark:text-white">92</div>
+          <p class="text-[11px] text-amber-500 font-semibold mt-1">₹ 2,799 avg plan</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-xs font-bold uppercase">Est. Partner Commission</span>
+            <i class="fa-solid fa-trophy text-wa-green"></i>
+          </div>
+          <div class="text-2xl font-extrabold text-emerald-600 dark:text-wa-green">₹ 64,380</div>
+          <p class="text-[11px] text-slate-400 mt-1">50% Distributor Tier</p>
+        </div>
+      </div>
+
+      <!-- Performance by Niche Visual Breakdown Bar Chart -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-white">Conversion Rates by SME Category</h3>
+        
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span>Kirana & Retail Stores</span>
+              <span class="text-emerald-600 font-bold">34% Conversion</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-wa-green rounded-full" style="width: 34%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span>Wholesalers & Distributors</span>
+              <span class="text-emerald-600 font-bold">28% Conversion</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-wa-teal rounded-full" style="width: 28%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span>Pharmacies & Chemist Shops</span>
+              <span class="text-emerald-600 font-bold">22% Conversion</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 rounded-full" style="width: 22%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span>Services & Contractors</span>
+              <span class="text-emerald-600 font-bold">16% Conversion</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-amber-500 rounded-full" style="width: 16%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Add Contact Modal -->
+  <div id="addLeadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-700">
+        <h3 class="font-bold text-slate-800 dark:text-white text-sm">Add New SME Contact</h3>
+        <button onclick="closeAddLeadModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-600 dark:text-slate-300 font-semibold mb-1">Owner Name</label>
+          <input type="text" id="newLeadName" class="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="e.g. Ramesh Patel">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-600 dark:text-slate-300 font-semibold mb-1">Business / Shop Name</label>
+          <input type="text" id="newLeadBusiness" class="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="e.g. Laxmi Provision Stores">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-600 dark:text-slate-300 font-semibold mb-1">Business Category</label>
+          <select id="newLeadNiche" class="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <option value="Kirana & Retail">Kirana & Retail</option>
+            <option value="Wholesale & FMCG">Wholesale & FMCG</option>
+            <option value="Pharmacy & Chemist">Pharmacy & Chemist</option>
+            <option value="Services & Repair">Services & Repair</option>
+            <option value="CA & Tax Consultant">CA & Tax Consultant</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-600 dark:text-slate-300 font-semibold mb-1">WhatsApp Number</label>
+            <input type="text" id="newLeadPhone" class="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="+91 98765 43210">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 dark:text-slate-300 font-semibold mb-1">Pending Udhar (₹)</label>
+            <input type="text" id="newLeadAmount" class="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="e.g. ₹ 45,000">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+        <button onclick="closeAddLeadModal()" class="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs text-slate-600 dark:text-slate-300">Cancel</button>
+        <button onclick="saveNewLead()" class="px-4 py-2 bg-wa-teal hover:bg-teal-700 text-white rounded-xl text-xs font-bold">Save Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic Application Suite -->
+  <script>
+    const PARTNER_LINK = "https://vyaparapp.in/?referrer_code=ZNNQ2XK";
+    const PARTNER_CODE = "ZNNQ2XK";
+
+    // Initial SME Leads
+    let leads = [
+      { id: 1, name: "Rajesh Sharma", business: "Sharma Kirana Stores", niche: "Kirana & Retail", phone: "+91 98230 11223", amount: "₹ 35,400", status: "Verified" },
+      { id: 2, name: "Amit Agarwal", business: "Agarwal Wholesale Corp", niche: "Wholesale & FMCG", phone: "+91 97110 44556", amount: "₹ 1,20,000", status: "Verified" },
+      { id: 3, name: "Dr. Suresh Reddy", business: "Reddy Medicals & Pharmacy", niche: "Pharmacy & Chemist", phone: "+91 99880 77654", amount: "₹ 18,200", status: "Verified" },
+      { id: 4, name: "Manoj Verma", business: "Verma Electrical Services", niche: "Services & Repair", phone: "+91 98450 33211", amount: "₹ 24,000", status: "Verified" },
+      { id: 5, name: "CA Vikas Mehta", business: "Mehta Tax & Financial Consultants", niche: "CA & Tax Consultant", phone: "+91 94430 88990", amount: "N/A", status: "Verified" }
+    ];
+
+    // High-converting multi-language templates categorized by SME Niche
+    const multiLangTemplates = {
+      kirana: {
+        hi: `ऑटोमेटेड बिलिंग और 5-सेकंड POS काउंटर के साथ अपने ग्राहकों को तेज़ी से बिल दें!
+
+नमस्ते *{{owner_name}}* जी (*{{business_name}}*),
+
+क्या आपकी दुकान पर बिलिंग की लंबी लाइनों से ग्राहक परेशान होते हैं?
+
+*Vyapar App* अपनाएं:
+• ⚡ बारकोड स्कैनर + फास्ट थर्मल प्रिंटिंग
+• 📱 ऑटोमैटिक व्हाट्सएप पेमेंट रिमाइंडर्स
+• 📊 शून्य स्टॉक नुकसान (लो-स्टॉक अलर्ट)
+
+👉 पार्टनर डिस्काउंट ऑफर:
+डाउनलोड करें: {{partner_link}}
+कूपन कोड उपयोग करें: *{{partner_code}}*`,
+
+        en: `Speed up your counter checkout with instant mobile POS billing!
+
+Dear *{{owner_name}}* (*{{business_name}}*),
+
+Tired of long queues and manual errors at your store counter?
+
+With *Vyapar App*:
+• ⚡ Scan barcodes & print bills in 3 seconds
+• 📱 Send instant WhatsApp invoices to customers
+• 📊 Track daily profits & cash drawer balance
+
+Get Free Trial & Partner Discount:
+🔗 Link: {{partner_link}}
+Coupon Code: *{{partner_code}}*`,
+
+        hinglish: `Counter billing speed 3x fast karein aur customer lines khatam karein!
+
+Hello *{{owner_name}}* ji (*{{business_name}}*),
+
+Kya manual billing mein time waste ho raha hai?
+
+*Vyapar App* se:
+• Fast Thermal Printing & Barcode scanning
+• Auto WhatsApp Bill share karein
+• Pending Udhar: {{pending_amount}} instantly track karein
+
+Exclusive Offer:
+Download link: {{partner_link}}
+Partner Code: *{{partner_code}}*`,
+
+        mr: `आपल्या दुकानासाठी जलद बिलिंग आणि स्टॉक मॅनेजमेंट अ‍ॅप!
+
+नमस्कार *{{owner_name}}* जी (*{{business_name}}*),
+
+*व्यापार अ‍ॅप* वापरा आणि दुकानाचे काम सोपे करा:
+• ⚡ ५ सेकंदात बारकोड प्रिंटिंग
+• 📱 थेट व्हॉट्सॲपवर बिल पाठवा
+• 📊 जीएसटी बिलिंग आणि स्टॉक ट्रॅकिंग
+
+विशेष ऑफरसाठी येथे क्लिक करा:
+🔗 {{partner_link}} (कोड: *{{partner_code}}*)`,
+
+        gu: `તમારા સ્ટોર માટે ઝડપી બિલિંગ અને સ્ટોક મેનેજમેન્ટ એપ!
+
+નમસ્તે *{{owner_name}}* જી (*{{business_name}}*),
+
+*વ્યાપાર એપ* સાથે તમારા સ્ટોરને ડિજિટલ બનાવો:
+• ⚡ ૩ સેકન્ડમાં બારકોડ બિલિંગ
+• 📱 વોટ્સએપ પર ગ્રાહકોને બિલ મોકલો
+
+વિશેષ ડિસ્કાઉન્ટ માટે લિંક પર ક્લિક કરો:
+🔗 {{partner_link}} (કોડ: *{{partner_code}}*)`
+      },
+
+      wholesale: {
+        hi: `अपने पेंडिंग उधार पेमेंट्स {{pending_amount}} तेज़ी से वसूल करें!
+
+प्रिय *{{owner_name}}* जी (*{{business_name}}*),
+
+क्या व्यापारियों से उधार की वसूली के लिए बार-बार कॉल करना पड़ता है?
+
+*Vyapar App* के लाभ:
+• 📱 पेमेंट लिंक के साथ सम्मानजनक व्हाट्सएप रिमाइंडर्स
+• 📑 पार्टी-वाइज़ लेजर और क्रेडिट लिमिट
+• 📊 GSTR-1 और GSTR-3B रिपोर्ट सेकंडों में
+
+आज ही डाउनलोड करें:
+🔗 {{partner_link}}
+पार्टनर कोड: *{{partner_code}}*`,
+
+        en: `Recover pending credit balances faster with automated reminders!
+
+Dear *{{owner_name}}* (*{{business_name}}*),
+
+Is chasing unpaid bills taking up too much of your time?
+
+*Vyapar App* helps wholesalers save hours daily:
+• 📱 Auto WhatsApp payment links to clients
+• 📑 Real-time party-wise ledgers & balance statements
+• 📊 One-click GST reports for CAs
+
+Claim Offer:
+🔗 {{partner_link}}
+Partner Code: *{{partner_code}}*`,
+
+        hinglish: `Udhar payments fast recover karein WhatsApp payment links ke saath!
+
+Dear *{{owner_name}}* (*{{business_name}}*),
+
+Distributors & Wholesalers ke liye Vyapar App sabse aasaan tool hai:
+• Automatic payment reminders send karein
+• {{pending_amount}} udhar ledger manage karein
+
+Special Partner Link:
+🔗 {{partner_link}} (Use Code: *{{partner_code}}*)`,
+
+        mr: `उधारीची वसुली करा दुप्पट वेगाने ऑटोमॅटिक व्हॉट्सॲप रिमाइंडर्सद्वारे!`,
+        gu: `ઉધાર પેમેન્ટ્સ ઝડપથી વસૂલ કરો ઓટોમેટિક વોટ્સએપ રીમાઇન્ડર્સ સાથે!`
+      },
+
+      pharmacy: {
+        hi: `मेडिसिन की एक्सपायरी और बॅच नंबर्स का नुकसान रोकें!
+
+नमस्ते *{{owner_name}}* जी (*{{business_name}}*),
+
+क्या दवाइयों की एक्सपायरी डेट निकलने से नुकसान होता है?
+
+*Vyapar Pharmacy Edition*:
+• 30 दिन पहले ऑटोमैटिक एक्सपायरी अलर्ट
+• सॉल्ट नेम और बैच-वाइज़ क्विक सर्च
+• ड्रग लाइसेंस रिपोर्ट और आसान बिलिंग
+
+अभी डाउनलोड करें: {{partner_link}}
+कोड: *{{partner_code}}*`,
+
+        en: `Stop stock losses due to expired medicines!
+
+Hello *{{owner_name}}* (*{{business_name}}*),
+
+Manage pharmacy inventory with complete precision:
+• 30-Day advance batch expiry alerts
+• Instant salt name & brand lookup
+• GST tax billing compliant with drug laws
+
+Try for Free: {{partner_link}}
+Partner Code: *{{partner_code}}*`,
+
+        hinglish: `Pharmacy store mein expired medicine stock losses band karein!`,
+        mr: `औषधांची एक्सपायरी आणि बॅच ट्रॅकिंग आता एकदम सोपे!`,
+        gu: `દવાઓની એક્સપાયરી ટ્રૅકિંગ હવે ખૂબ જ સરળ!`
+      },
+
+      services: {
+        hi: `प्रोफेशनल एस्टीमेट और कोटेशन बनाएं सेकंडों में!`,
+        en: `Convert estimates into bills in one click for *{{business_name}}*!`,
+        hinglish: `Professional Estimates ko 1-click mein bills mein convert karein!`,
+        mr: `प्रोफेशनल कोटेशन आणि बिलिंग करा सहजतेने!`,
+        gu: `પ્રોફેશનલ અંદાજ અને બિલિંગ હવે એક જ ક્લિકમાં!`
+      },
+
+      ca: {
+        hi: `अपने क्लाइंट्स के लिए GST रिपोर्ट जनरेट करें 1-क्लिक में!`,
+        en: `Simplify GST compliance & GSTR filings for your clients at *{{business_name}}*!`,
+        hinglish: `GSTR-1 & GSTR-3B filings clients ke liye 100% accurate karein!`,
+        mr: `जीएसटी फायलिंग करा अगदी अचूक आणि वेगाने!`,
+        gu: `જીએસટી ફાઇલિંગ કરો સરળતાથી વ્યાપાર એપ વડે!`
+      }
+    };
+
+    let selectedLeadId = 1;
+    let campaignRunning = false;
+    let campaignTimer = null;
+
+    // Switch View (Workspace vs Dashboard)
+    function switchView(viewName) {
+      if (viewName === 'dashboard') {
+        document.getElementById('view-workspace').classList.add('hidden');
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('view-dashboard').classList.add('flex');
+      } else {
+        document.getElementById('view-dashboard').classList.add('hidden');
+        document.getElementById('view-dashboard').classList.remove('flex');
+        document.getElementById('view-workspace').classList.remove('hidden');
+      }
+    }
+
+    // Switch Tabs inside Workspace
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-wa-teal', 'text-white', 'shadow');
+        btn.classList.add('text-slate-600', 'dark:text-slate-300');
+      });
+
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      activeBtn.classList.add('bg-wa-teal', 'text-white', 'shadow');
+      activeBtn.classList.remove('text-slate-600', 'dark:text-slate-300');
+    }
+
+    // Handle Language or Niche Preset Selection
+    function handleLangOrNicheChange() {
+      const niche = document.getElementById('nichePresetSelector').value;
+      const lang = document.getElementById('langSelector').value;
+
+      if (multiLangTemplates[niche] && multiLangTemplates[niche][lang]) {
+        document.getElementById('templateBody').value = multiLangTemplates[niche][lang];
+      } else if (multiLangTemplates[niche] && multiLangTemplates[niche]['en']) {
+        document.getElementById('templateBody').value = multiLangTemplates[niche]['en'];
+      }
+      updateLivePreview();
+    }
+
+    function insertTag(tag) {
+      const textarea = document.getElementById('templateBody');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      textarea.value = text.substring(0, start) + tag + text.substring(end);
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+      updateLivePreview();
+    }
+
+    function formatWhatsAppText(str) {
+      return str
+        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+        .replace(/_(.*?)_/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+    }
+
+    // Live Phone Mockup Preview Updater
+    function updateLivePreview() {
+      const activeLead = leads.find(l => l.id == selectedLeadId) || leads[0];
+      let rawText = document.getElementById('templateBody').value;
+
+      let renderedText = rawText
+        .replace(/{{owner_name}}/g, activeLead.name)
+        .replace(/{{business_name}}/g, activeLead.business)
+        .replace(/{{niche}}/g, activeLead.niche)
+        .replace(/{{pending_amount}}/g, activeLead.amount)
+        .replace(/{{partner_code}}/g, PARTNER_CODE)
+        .replace(/{{partner_link}}/g, PARTNER_LINK);
+
+      document.getElementById('whatsappMessagePreview').innerHTML = formatWhatsAppText(renderedText);
+      document.getElementById('previewRecipientName').innerText = activeLead.name;
+      document.getElementById('previewBusinessName').innerText = activeLead.business;
+      document.getElementById('previewAvatar').innerText = activeLead.name.charAt(0);
+
+      // Render Action Buttons
+      const btn1 = document.getElementById('btn1Text').value.trim();
+      const btn2 = document.getElementById('btn2Text').value.trim();
+      const btnContainer = document.getElementById('buttonsPreviewContainer');
+      btnContainer.innerHTML = '';
+
+      if (btn1) {
+        btnContainer.innerHTML += `<div class="bg-white/90 dark:bg-slate-800/90 text-wa-teal dark:text-wa-green font-bold py-1 px-2 rounded-lg text-[10.5px] text-center shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">${btn1}</div>`;
+      }
+      if (btn2) {
+        btnContainer.innerHTML += `<div class="bg-white/90 dark:bg-slate-800/90 text-wa-teal dark:text-wa-green font-bold py-1 px-2 rounded-lg text-[10.5px] text-center shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">${btn2}</div>`;
+      }
+    }
+
+    // Render Audience Directory
+    function renderAudienceList() {
+      const filter = document.getElementById('nicheFilter').value;
+      const container = document.getElementById('audienceListContainer');
+      const selectPicker = document.getElementById('activeLeadSelect');
+      
+      container.innerHTML = '';
+      selectPicker.innerHTML = '';
+
+      const filteredLeads = leads.filter(l => filter === 'ALL' || l.niche === filter);
+      document.getElementById('lead-count-badge').innerText = filteredLeads.length;
+
+      filteredLeads.forEach(lead => {
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border text-xs flex justify-between items-center cursor-pointer transition ${lead.id === selectedLeadId ? 'bg-teal-50 border-wa-teal dark:bg-teal-950/40 dark:border-wa-green' : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 hover:bg-slate-100'}`;
+        card.onclick = () => { selectedLeadId = lead.id; changeActiveTestLead(); renderAudienceList(); };
+        card.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-800 dark:text-slate-100">${lead.name}</div>
+            <div class="text-[11px] text-slate-500">${lead.business} • <span class="text-wa-teal dark:text-wa-green font-semibold">${lead.niche}</span></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">${lead.amount}</span>
+            <button onclick="event.stopPropagation(); removeLead(${lead.id})" class="text-slate-400 hover:text-red-500 p-1">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+
+        const opt = document.createElement('option');
+        opt.value = lead.id;
+        opt.innerText = `${lead.name} (${lead.business})`;
+        if (lead.id === selectedLeadId) opt.selected = true;
+        selectPicker.appendChild(opt);
+      });
+
+      updateLeadMetaCard();
+    }
+
+    function changeActiveTestLead() {
+      selectedLeadId = parseInt(document.getElementById('activeLeadSelect').value);
+      updateLeadMetaCard();
+      updateLivePreview();
+    }
+
+    function updateLeadMetaCard() {
+      const activeLead = leads.find(l => l.id === selectedLeadId) || leads[0];
+      if (!activeLead) return;
+      document.getElementById('leadMetaCard').innerHTML = `
+        <div><strong>Phone:</strong> ${activeLead.phone}</div>
+        <div><strong>Category:</strong> ${activeLead.niche}</div>
+        <div><strong>Udhar Ledger:</strong> ${activeLead.amount}</div>
+        <div><strong>WA Status:</strong> <span class="text-emerald-600 font-semibold">Active User</span></div>
+      `;
+    }
+
+    function removeLead(id) {
+      leads = leads.filter(l => l.id !== id);
+      if (selectedLeadId === id && leads.length > 0) selectedLeadId = leads[0].id;
+      renderAudienceList();
+      updateLivePreview();
+    }
+
+    function importSampleLeadsCSV() {
+      leads.push(
+        { id: Date.now() + 1, name: "Vijay Electronics", business: "Vijay Sales & Service", niche: "Kirana & Retail", phone: "+91 91122 33445", amount: "₹ 82,000", status: "Verified" },
+        { id: Date.now() + 2, name: "Gopal Enterprise", business: "Gopal FMCG Agency", niche: "Wholesale & FMCG", phone: "+91 92233 44556", amount: "₹ 2,40,000", status: "Verified" }
+      );
+      renderAudienceList();
+      logTerminal("Imported 2 sample SME contact records from CSV stream.", "success");
+    }
+
+    function openAddLeadModal() {
+      document.getElementById('addLeadModal').classList.remove('hidden');
+      document.getElementById('addLeadModal').classList.add('flex');
+    }
+
+    function closeAddLeadModal() {
+      document.getElementById('addLeadModal').classList.add('hidden');
+      document.getElementById('addLeadModal').classList.remove('flex');
+    }
+
+    function saveNewLead() {
+      const name = document.getElementById('newLeadName').value.trim();
+      const business = document.getElementById('newLeadBusiness').value.trim();
+      const niche = document.getElementById('newLeadNiche').value;
+      const phone = document.getElementById('newLeadPhone').value.trim();
+      const amount = document.getElementById('newLeadAmount').value.trim();
+
+      if (!name || !business) {
+        alert("Please enter contact owner and business name.");
+        return;
+      }
+
+      const newId = Date.now();
+      leads.push({
+        id: newId,
+        name,
+        business,
+        niche,
+        phone: phone || "+91 90000 00000",
+        amount: amount || "N/A",
+        status: "Verified"
+      });
+
+      selectedLeadId = newId;
+      closeAddLeadModal();
+      renderAudienceList();
+      updateLivePreview();
+    }
+
+    function copyPartnerCode() {
+      const tempInput = document.createElement("input");
+      tempInput.value = PARTNER_CODE;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+      alert("Partner Code " + PARTNER_CODE + " copied to clipboard!");
+    }
+
+    // Campaign Dispatch Terminal Simulation Logic
+    function logTerminal(msg, type = "info") {
+      const terminal = document.getElementById('terminalLog');
+      const entry = document.createElement('div');
+      const timestamp = new Date().toLocaleTimeString();
+
+      let colorClass = "text-emerald-400";
+      if (type === "warn") colorClass = "text-amber-400";
+      if (type === "success") colorClass = "text-wa-green font-bold";
+
+      entry.className = colorClass;
+      entry.innerHTML = `<span class="text-slate-500">[${timestamp}]</span> ${msg}`;
+      terminal.appendChild(entry);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function startCampaignExecution() {
+      if (campaignRunning) return;
+
+      campaignRunning = true;
+      document.getElementById('btnRunCampaign').disabled = true;
+      document.getElementById('btnRunCampaign').classList.add('opacity-50');
+      document.getElementById('btnStopCampaign').disabled = false;
+      document.getElementById('btnStopCampaign').classList.remove('opacity-50', 'cursor-not-allowed');
+      document.getElementById('terminalStatus').innerText = "STATUS: DISPATCHING BATCH";
+      document.getElementById('terminalStatus').className = "text-[10px] text-wa-green font-mono font-bold animate-pulse";
+
+      logTerminal("Initiating WhatsApp API broadcast stream...", "info");
+
+      let index = 0;
+      let sent = 0;
+      let delivered = 0;
+      let read = 0;
+      let clicks = 0;
+
+      const delaySec = parseInt(document.getElementById('delaySlider').value);
+
+      campaignTimer = setInterval(() => {
+        if (index >= leads.length) {
+          stopCampaignExecution();
+          logTerminal("Broadcast execution complete! All targeted leads processed.", "success");
+          return;
+        }
+
+        const lead = leads[index];
+        sent++;
+        delivered++;
+        if (Math.random() > 0.15) read++;
+        if (Math.random() > 0.35) clicks++;
+
+        selectedLeadId = lead.id;
+        document.getElementById('activeLeadSelect').value = lead.id;
+        updateLeadMetaCard();
+        updateLivePreview();
+
+        document.getElementById('statSent').innerText = sent;
+        document.getElementById('statDelivered').innerText = delivered;
+        document.getElementById('statRead').innerText = `${Math.round((read / sent) * 100)}%`;
+        document.getElementById('statClicks').innerText = clicks;
+
+        logTerminal(`[OUTBOUND] Template sent to ${lead.name} (${lead.business}) | Code: ZNNQ2XK | Status: DELIVERED`, "info");
+
+        index++;
+      }, delaySec * 1000);
+    }
+
+    function stopCampaignExecution() {
+      campaignRunning = false;
+      clearInterval(campaignTimer);
+
+      document.getElementById('btnRunCampaign').disabled = false;
+      document.getElementById('btnRunCampaign').classList.remove('opacity-50');
+      document.getElementById('btnStopCampaign').disabled = true;
+      document.getElementById('btnStopCampaign').classList.add('opacity-50', 'cursor-not-allowed');
+      document.getElementById('terminalStatus').innerText = "STATUS: IDLE / PAUSED";
+      document.getElementById('terminalStatus').className = "text-[10px] text-slate-400 font-mono";
+
+      logTerminal("Campaign stream paused.", "warn");
+    }
+
+    // Theme Switcher
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    // Window Init
+    window.onload = function() {
+      handleLangOrNicheChange();
+      renderAudienceList();
+      updateLivePreview();
+    };
+  </script>
+</body>
+</html>
