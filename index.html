@@ -59,7 +59,7 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <h1 class="font-bold text-lg tracking-tight text-white">Vyapar Partner Suite</h1>
-                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.13 Phone Fix</span>
+                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.15 Smart OCR Fix</span>
                         </div>
                         <p class="text-xs text-slate-400">Automated SME Lead Generation & Advanced Capture</p>
                     </div>
@@ -113,7 +113,7 @@
                     <div class="flex items-center justify-between">
                         <h2 class="font-semibold text-base text-white flex items-center space-x-2">
                             <i class="fa-solid fa-address-book text-brand-400"></i>
-                            <span>Leads CRM & Capture Engine</span>
+                            <span>Leads CRM & Notes Engine</span>
                         </h2>
                         <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded-md" x-text="filteredLeads.length + ' shown'"></span>
                     </div>
@@ -147,7 +147,7 @@
                         </div>
                     </div>
 
-                    <!-- Action Capture Buttons: Voice Wizard & Scan Card -->
+                    <!-- Action Capture Buttons -->
                     <div class="grid grid-cols-2 gap-2">
                         <button @click="startVoiceWizard()" class="bg-brand-600 hover:bg-brand-700 text-white p-2.5 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5 shadow">
                             <i class="fa-solid fa-microphone-lines"></i>
@@ -166,8 +166,8 @@
                                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500">
                     </div>
 
-                    <!-- Leads List -->
-                    <div class="max-h-72 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
+                    <!-- Leads List with Notes Preview -->
+                    <div class="max-h-80 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
                         <template x-for="lead in filteredLeads" :key="lead.id">
                             <div class="bg-slate-900/60 border border-slate-700/60 hover:border-slate-600 p-3 rounded-xl flex flex-col space-y-2 transition">
                                 <div class="flex items-center justify-between">
@@ -185,16 +185,30 @@
                                     </div>
                                     <div class="flex items-center space-x-1.5">
                                         <button @click="openSingleWhatsApp(lead)" class="bg-whatsapp-600 hover:bg-whatsapp-700 text-white px-2.5 py-1.5 rounded-lg text-xs" title="Send WhatsApp">
-                                            <i class="fa-brands fa-whatsapp"></i> Send
+                                            <i class="fa-brands fa-whatsapp"></i>
                                         </button>
-                                        <button @click="editLead(lead)" class="bg-slate-800 hover:bg-brand-900/50 text-slate-400 hover:text-brand-400 border border-slate-700 hover:border-brand-500/30 px-2 py-1.5 rounded-lg text-xs transition" title="Edit Lead">
+                                        <button @click="openLeadNotes(lead)" :class="lead.notes ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-700'" class="px-2.5 py-1.5 rounded-lg text-xs transition" title="Follow-up Notes">
+                                            <i class="fa-solid fa-note-sticky"></i>
+                                        </button>
+                                        <button @click="editLead(lead)" class="bg-slate-800 hover:bg-brand-900/50 text-slate-400 hover:text-brand-400 border border-slate-700 px-2 py-1.5 rounded-lg text-xs transition" title="Edit Lead">
                                             <i class="fa-solid fa-pen"></i>
                                         </button>
-                                        <button @click="deleteLead(lead.id)" class="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-2 py-1.5 rounded-lg text-xs transition" title="Delete Lead">
+                                        <button @click="deleteLead(lead.id)" class="bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 border border-slate-700 px-2 py-1.5 rounded-lg text-xs transition" title="Delete Lead">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
                                 </div>
+
+                                <!-- Follow-up Notes Display Badge -->
+                                <template x-if="lead.notes">
+                                    <div class="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 text-[11px] text-amber-200 flex justify-between items-start">
+                                        <div>
+                                            <span class="font-semibold text-amber-400"><i class="fa-regular fa-clock mr-1"></i>Follow-up:</span>
+                                            <span x-text="lead.notes"></span>
+                                        </div>
+                                        <span class="text-[10px] text-amber-400/80 font-mono ml-2" x-text="lead.followUpDate || ''"></span>
+                                    </div>
+                                </template>
 
                                 <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
                                     <span class="text-[10px] text-slate-400">Status:</span>
@@ -302,6 +316,41 @@
         </div>
     </div>
 
+    <!-- Follow-up Notes Modal -->
+    <div x-show="notesModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="font-semibold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-note-sticky text-amber-400"></i>
+                    <span>Follow-up Reminder Notes</span>
+                </h3>
+                <button @click="notesModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <template x-if="activeLeadForNotes">
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <span class="text-slate-400">Lead:</span>
+                        <span class="font-bold text-white ml-1" x-text="activeLeadForNotes.name + ' (' + activeLeadForNotes.business + ')'"></span>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Follow-up Target Date:</label>
+                        <input type="date" x-model="activeLeadForNotes.followUpDate" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Reminder Notes / Action Items:</label>
+                        <textarea x-model="activeLeadForNotes.notes" rows="4" placeholder="e.g. Call back after 4 PM regarding thermal printer setup..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand-500 leading-relaxed"></textarea>
+                    </div>
+                </div>
+            </template>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-700">
+                <button @click="notesModal = false" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs">Cancel</button>
+                <button @click="saveLeadNotes()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl text-xs shadow">Save Reminder</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Voice Wizard Modal -->
     <div x-show="wizardModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md space-y-5 shadow-2xl text-center">
@@ -390,8 +439,12 @@
                 wizardModal: false,
                 wizardStep: 1,
                 wizardLiveText: '',
-                wizardData: { name: '', business: '', phone: '', city: '', niche: 'Retail & Kirana' },
+                wizardData: { name: '', business: '', phone: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' },
                 wizardRecognition: null,
+
+                // Notes state
+                notesModal: false,
+                activeLeadForNotes: null,
 
                 editingLeadModal: false,
                 editingLead: null,
@@ -399,9 +452,9 @@
                 leads: [],
 
                 defaultLeads: [
-                    { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', city: 'Local', niche: 'Services & CAs', status: 'New' },
-                    { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', city: 'Local', niche: 'Services & CAs', status: 'New' },
-                    { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', city: 'Local', niche: 'Services & CAs', status: 'New' }
+                    { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', city: 'Local', niche: 'Services & CAs', status: 'New', notes: 'Interested in thermal printer demo', followUpDate: '2026-06-10' },
+                    { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' },
+                    { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' }
                 ],
 
                 messageText: `Fast-track your counter billing and stock updates with Vyapar App!
@@ -425,7 +478,7 @@ Claim your free trial & partner discount:
                     if (saved) {
                         try { 
                             const parsed = JSON.parse(saved);
-                            this.leads = parsed.map(l => ({ ...l, status: l.status || 'New', niche: l.niche || 'Retail & Kirana' }));
+                            this.leads = parsed.map(l => ({ ...l, status: l.status || 'New', niche: l.niche || 'Retail & Kirana', notes: l.notes || '', followUpDate: l.followUpDate || '' }));
                         } catch(e) { this.leads = [...this.defaultLeads]; }
                     } else {
                         this.leads = [...this.defaultLeads];
@@ -436,6 +489,24 @@ Claim your free trial & partner discount:
                     localStorage.setItem('vyapar_partner_leads', JSON.stringify(this.leads));
                 },
 
+                openLeadNotes(lead) {
+                    this.activeLeadForNotes = JSON.parse(JSON.stringify(lead));
+                    this.notesModal = true;
+                },
+
+                saveLeadNotes() {
+                    if (!this.activeLeadForNotes) return;
+                    const index = this.leads.findIndex(l => l.id === this.activeLeadForNotes.id);
+                    if (index !== -1) {
+                        this.leads[index].notes = this.activeLeadForNotes.notes;
+                        this.leads[index].followUpDate = this.activeLeadForNotes.followUpDate;
+                        this.saveLeadsToStorage();
+                        this.logs.push(`[Notes]: Updated follow-up note for #${this.activeLeadForNotes.id}`);
+                    }
+                    this.notesModal = false;
+                    this.activeLeadForNotes = null;
+                },
+
                 // Field-by-Field Voice Wizard Logic
                 startVoiceWizard() {
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -444,7 +515,7 @@ Claim your free trial & partner discount:
                         return;
                     }
                     this.wizardStep = 1;
-                    this.wizardData = { name: '', business: '', phone: '', city: '', niche: 'Retail & Kirana' };
+                    this.wizardData = { name: '', business: '', phone: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' };
                     this.wizardLiveText = '';
                     this.wizardModal = true;
                     this.initWizardListener();
@@ -507,7 +578,7 @@ Claim your free trial & partner discount:
                         let raw = text.toLowerCase();
                         if (raw.includes('pharm')) this.wizardData.niche = 'Pharmacies';
                         else if (raw.includes('wholesale')) this.wizardData.niche = 'Wholesalers';
-                        else if (raw.includes('service') || raw.includes('tour') || raw.includes('resort')) this.wizardData.niche = 'Services & CAs';
+                        else if (raw.includes('service') || raw.includes('tour') || raw.includes('resort') || raw.includes('dmc')) this.wizardData.niche = 'Services & CAs';
                         else this.wizardData.niche = 'Retail & Kirana';
 
                         this.saveWizardLead();
@@ -529,7 +600,9 @@ Claim your free trial & partner discount:
                         phone: this.wizardData.phone,
                         city: this.wizardData.city,
                         niche: this.wizardData.niche,
-                        status: 'New'
+                        status: 'New',
+                        notes: '',
+                        followUpDate: ''
                     };
 
                     this.selectedNiche = 'all';
@@ -538,10 +611,10 @@ Claim your free trial & partner discount:
                     this.leads.unshift(newLead);
                     this.saveLeadsToStorage();
                     this.logs.push(`[Wizard Success]: Added #${newId} ${newLead.name}`);
-                    alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nCity: ${newLead.city}\nNiche: ${newLead.niche}`);
+                    alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
                 },
 
-                // Smart Layout-Aware Visiting Card OCR Scanner with Robust Phone Parser
+                // Upgraded Robust Visiting Card OCR Scanner
                 async scanVisitingCard(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -559,7 +632,7 @@ Claim your free trial & partner discount:
                         const fullText = text;
                         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
-                        // 1. Robust Phone Number Extraction (Handles "Ph : +91 9809450603", "Mob:", etc.)
+                        // 1. Robust Phone Number Extraction
                         const phoneMatch = fullText.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
                         let phone = '+91 98765 43210';
                         if (phoneMatch) {
@@ -573,33 +646,42 @@ Claim your free trial & partner discount:
                             }
                         }
 
-                        // 2. Identify Business Name (Look for Resort, Spa, Hotel, Hospitality, Pvt, Ltd, etc.)
+                        // 2. Intelligent Business Name Extraction (Prevents pulling numbers or sales headers)
                         let business = 'Local Business';
-                        const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours/i.test(l));
-                        if (businessLine) {
-                            business = businessLine;
-                        } else if (lines.length > 3) {
-                            business = lines[3];
+                        const domainMatch = fullText.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
+                        if (domainMatch && domainMatch[1]) {
+                            let cleanBrand = domainMatch[1].replace(/([A-Z])/g, ' $1').trim();
+                            business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
+                        } else {
+                            const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc/i.test(l));
+                            if (businessLine) {
+                                business = businessLine;
+                            } else {
+                                const validLine = lines.find(l => !/sales team|director|manager|ph|www|@/i.test(l) && l.length > 4 && !/\d/.test(l));
+                                if (validLine) business = validLine;
+                            }
                         }
 
-                        // 3. Identify Owner Name (Exclude titles and job designations)
+                        // 3. Name Extraction (Excludes sales team/directors headers)
                         let name = 'Card Lead';
-                        const nameLine = lines.find(l => !/director|manager|sales|marketing|ph|www|@|p\.o\.|district|kerla|kerala/i.test(l) && l.length > 3);
+                        const nameLine = lines.find(l => !/sales team|director|manager|ph|www|@|p\.o\.|district/i.test(l) && l.length > 3 && !/\d/.test(l));
                         if (nameLine) {
                             name = nameLine;
                         }
 
-                        // 4. Identify City from text context
+                        // 4. City Extraction
                         let city = 'Local';
                         if (/munnar/i.test(fullText)) city = 'Munnar';
-                        else if (/varanasi/i.test(fullText)) city = 'Varanasi';
+                        else if (/dubai/i.test(fullText)) city = 'Dubai';
                         else if (/mumbai/i.test(fullText)) city = 'Mumbai';
                         else if (/delhi/i.test(fullText)) city = 'Delhi';
                         else if (/pune/i.test(fullText)) city = 'Pune';
+                        else if (/varanasi/i.test(fullText)) city = 'Varanasi';
+                        else if (/india/i.test(fullText)) city = 'India Operations';
 
-                        // 5. Correctly Map Niche (Resorts, Hospitality, Spas -> Services & CAs)
+                        // 5. Accurate Niche Mapping (DMC, Travel, Trips, Resorts -> Services & CAs)
                         let niche = 'Retail & Kirana';
-                        if (/resort|spa|hotel|hospitality|tourism|tour|travel|service|CA|consultant/i.test(fullText)) {
+                        if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(fullText)) {
                             niche = 'Services & CAs';
                         } else if (/pharm|chemist|medical/i.test(fullText)) {
                             niche = 'Pharmacies';
@@ -615,7 +697,9 @@ Claim your free trial & partner discount:
                             phone: phone,
                             city: city,
                             niche: niche,
-                            status: 'New'
+                            status: 'New',
+                            notes: '',
+                            followUpDate: ''
                         };
 
                         this.selectedNiche = 'all';
@@ -625,7 +709,7 @@ Claim your free trial & partner discount:
                         this.saveLeadsToStorage();
                         
                         this.isScanning = false;
-                        alert(`✅ Visiting Card Scanned Successfully!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nCity: ${newLead.city}\nNiche: ${newLead.niche}`);
+                        alert(`✅ Visiting Card Scanned Successfully!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nNiche: ${newLead.niche}`);
                     } catch(err) {
                         this.isScanning = false;
                         alert('Error scanning visiting card: ' + err.message);
