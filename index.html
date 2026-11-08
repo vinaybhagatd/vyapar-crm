@@ -789,6 +789,13 @@ Vyapar Partner Team`;
                         });
 
                         this.logs.push(`[OCR Extracted]: "${text.substring(0, 60)}..."`);
+
+// --- TEMPORARY DEBUG ALERT ---
+alert(`RAW OCR TEXT:\n\n${text}`);
+// -----------------------------
+
+const fullText = text;
+const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
                         
                         const fullText = text;
                         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
