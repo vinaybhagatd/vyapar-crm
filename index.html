@@ -775,16 +775,51 @@ Vyapar Partner Team`;
                     alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
                 },
 
-                // Upgraded Visiting Card OCR Scanner with Email Extraction
+// Upgraded Visiting Card OCR Scanner with High-Contrast Canvas Preprocessing
                 async scanVisitingCard(event) {
                     const file = event.target.files[0];
                     if (!file) return;
 
                     this.isScanning = true;
-                    this.scanStatusText = 'Extracting text from visiting card...';
+                    this.scanStatusText = 'Preprocessing & extracting text...';
 
                     try {
-                        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+                        // 1. Convert uploaded file to an image element for canvas processing
+                        const img = document.createElement('img');
+                        const objectURL = URL.createObjectURL(file);
+                        
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                            img.src = objectURL;
+                        });
+
+                        // 2. Draw image to canvas and apply high-contrast binarization
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Scale for optimal OCR resolution (max width 1200px)
+                        const scale = Math.min(1, 1200 / img.width);
+                        canvas.width = img.width * scale;
+                        canvas.height = img.height * scale;
+                        
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        URL.revokeObjectURL(objectURL);
+
+                        // High-contrast grayscale binarization for iOS Safari clarity
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
+                        for (let i = 0; i < data.length; i += 4) {
+                            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                            const binarized = avg > 130 ? 255 : 0; // Adjustable threshold
+                            data[i] = binarized;     // Red
+                            data[i + 1] = binarized; // Green
+                            data[i + 2] = binarized; // Blue
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+
+                        // 3. Pass the enhanced canvas to Tesseract.js
+                        const { data: { text } } = await Tesseract.recognize(canvas, 'eng', {
                             logger: m => { if (m.status === 'recognizing text') this.scanStatusText = `Scanning: ${Math.round(m.progress * 100)}%`; }
                         });
 
