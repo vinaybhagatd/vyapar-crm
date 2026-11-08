@@ -813,13 +813,17 @@ async scanVisitingCard(event) {
                         }
 
                         // 3. Business Name Extraction
+
+// 3. Business Name Extraction (Excluding generic email providers like gmail)
                         let business = 'Local Business';
                         const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
-                        if (domainMatch && domainMatch[1]) {
+                        const ignoredDomains = ['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'rediffmail', 'aol'];
+                        
+                        if (domainMatch && domainMatch[1] && !ignoredDomains.includes(domainMatch[1].toLowerCase())) {
                             let cleanBrand = domainMatch[1].replace(/([A-Z])/g, ' $1').trim();
                             business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
                         } else {
-                            const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc/i.test(l));
+                            const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc|travel|agency/i.test(l));
                             if (businessLine) {
                                 business = businessLine;
                             } else {
@@ -827,6 +831,8 @@ async scanVisitingCard(event) {
                                 if (validLine) business = validLine;
                             }
                         }
+
+
 
                         // 4. Name Extraction
                         let name = 'Card Lead';
