@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vyapar Partner WhatsApp Automation Suite</title>
+    <title>Vyapar Partner WhatsApp & Email Automation Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js for Interactivity -->
@@ -59,13 +59,18 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <h1 class="font-bold text-lg tracking-tight text-white">Vyapar Partner Suite</h1>
-                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.15 Smart OCR Fix</span>
+                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.16 CSV & Email Blog</span>
                         </div>
-                        <p class="text-xs text-slate-400">Automated SME Lead Generation & Advanced Capture</p>
+                        <p class="text-xs text-slate-400">Automated Lead Capture, CSV Export & Niche Welcome Emails</p>
                     </div>
                 </div>
 
                 <div class="flex items-center space-x-4">
+                    <button @click="exportToCSV()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow">
+                        <i class="fa-solid fa-file-csv text-whatsapp-400 text-sm"></i>
+                        <span>Export CSV</span>
+                    </button>
+
                     <div class="hidden sm:flex items-center space-x-2 bg-slate-700/60 border border-slate-600/50 px-3 py-1.5 rounded-lg text-xs">
                         <span class="text-slate-400">Partner Code:</span>
                         <span class="font-mono font-semibold text-whatsapp-400 bg-whatsapp-950/50 px-2 py-0.5 rounded border border-whatsapp-500/20" x-text="partnerCode"></span>
@@ -113,7 +118,7 @@
                     <div class="flex items-center justify-between">
                         <h2 class="font-semibold text-base text-white flex items-center space-x-2">
                             <i class="fa-solid fa-address-book text-brand-400"></i>
-                            <span>Leads CRM & Notes Engine</span>
+                            <span>Leads CRM & Email Engine</span>
                         </h2>
                         <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded-md" x-text="filteredLeads.length + ' shown'"></span>
                     </div>
@@ -162,11 +167,11 @@
                     </div>
 
                     <div class="flex gap-2 items-center">
-                        <input type="text" x-model="searchQuery" placeholder="Search name or city..." 
+                        <input type="text" x-model="searchQuery" placeholder="Search name, city, email..." 
                                class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500">
                     </div>
 
-                    <!-- Leads List with Notes Preview -->
+                    <!-- Leads List with Email Actions & Notes Preview -->
                     <div class="max-h-80 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
                         <template x-for="lead in filteredLeads" :key="lead.id">
                             <div class="bg-slate-900/60 border border-slate-700/60 hover:border-slate-600 p-3 rounded-xl flex flex-col space-y-2 transition">
@@ -177,17 +182,25 @@
                                             <span class="font-semibold text-sm text-white" x-text="lead.name"></span>
                                             <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700" x-text="lead.business"></span>
                                         </div>
-                                        <div class="text-[11px] text-slate-400 mt-0.5">
-                                            <span class="mr-2"><i class="fa-solid fa-phone text-[9px] mr-1"></i><span x-text="lead.phone"></span></span>
-                                            <span class="mr-2"><i class="fa-solid fa-location-dot text-[9px] mr-1"></i><span x-text="lead.city"></span></span>
-                                            <span class="text-brand-400 font-medium" x-text="'• ' + lead.niche"></span>
+                                        <div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">
+                                            <div>
+                                                <span class="mr-2"><i class="fa-solid fa-phone text-[9px] mr-1"></i><span x-text="lead.phone"></span></span>
+                                                <span class="mr-2"><i class="fa-solid fa-location-dot text-[9px] mr-1"></i><span x-text="lead.city"></span></span>
+                                                <span class="text-brand-400 font-medium" x-text="'• ' + lead.niche"></span>
+                                            </div>
+                                            <div class="text-slate-500 text-[10px]">
+                                                <i class="fa-regular fa-envelope mr-1 text-[9px]"></i><span x-text="lead.email || 'No email provided'"></span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="flex items-center space-x-1.5">
-                                        <button @click="openSingleWhatsApp(lead)" class="bg-whatsapp-600 hover:bg-whatsapp-700 text-white px-2.5 py-1.5 rounded-lg text-xs" title="Send WhatsApp">
+                                        <button @click="openSingleWhatsApp(lead)" class="bg-whatsapp-600 hover:bg-whatsapp-700 text-white px-2 py-1.5 rounded-lg text-xs" title="Send WhatsApp">
                                             <i class="fa-brands fa-whatsapp"></i>
                                         </button>
-                                        <button @click="openLeadNotes(lead)" :class="lead.notes ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-700'" class="px-2.5 py-1.5 rounded-lg text-xs transition" title="Follow-up Notes">
+                                        <button @click="sendWelcomeEmailBlog(lead)" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded-lg text-xs" title="Email Niche Blog & Link">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                        </button>
+                                        <button @click="openLeadNotes(lead)" :class="lead.notes ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-700'" class="px-2 py-1.5 rounded-lg text-xs transition" title="Follow-up Notes">
                                             <i class="fa-solid fa-note-sticky"></i>
                                         </button>
                                         <button @click="editLead(lead)" class="bg-slate-800 hover:bg-brand-900/50 text-slate-400 hover:text-brand-400 border border-slate-700 px-2 py-1.5 rounded-lg text-xs transition" title="Edit Lead">
@@ -404,6 +417,10 @@
                         </div>
                     </div>
                     <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Email Address:</label>
+                        <input type="email" x-model="editingLead.email" placeholder="owner@business.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div>
                         <label class="block text-slate-400 mb-1 font-medium">SME Niche:</label>
                         <select x-model="editingLead.niche" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
                             <option value="Retail & Kirana">Retail & Kirana</option>
@@ -439,7 +456,7 @@
                 wizardModal: false,
                 wizardStep: 1,
                 wizardLiveText: '',
-                wizardData: { name: '', business: '', phone: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' },
+                wizardData: { name: '', business: '', phone: '', email: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' },
                 wizardRecognition: null,
 
                 // Notes state
@@ -452,9 +469,9 @@
                 leads: [],
 
                 defaultLeads: [
-                    { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', city: 'Local', niche: 'Services & CAs', status: 'New', notes: 'Interested in thermal printer demo', followUpDate: '2026-06-10' },
-                    { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' },
-                    { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' }
+                    { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', email: 'sudhagani@moksha.com', city: 'Local', niche: 'Services & CAs', status: 'New', notes: 'Interested in thermal printer demo', followUpDate: '2026-06-10' },
+                    { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', email: 'sales@heritage.in', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' },
+                    { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', email: 'info@ncpa.org', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' }
                 ],
 
                 messageText: `Fast-track your counter billing and stock updates with Vyapar App!
@@ -478,7 +495,14 @@ Claim your free trial & partner discount:
                     if (saved) {
                         try { 
                             const parsed = JSON.parse(saved);
-                            this.leads = parsed.map(l => ({ ...l, status: l.status || 'New', niche: l.niche || 'Retail & Kirana', notes: l.notes || '', followUpDate: l.followUpDate || '' }));
+                            this.leads = parsed.map(l => ({ 
+                                ...l, 
+                                status: l.status || 'New', 
+                                niche: l.niche || 'Retail & Kirana', 
+                                email: l.email || '',
+                                notes: l.notes || '', 
+                                followUpDate: l.followUpDate || '' 
+                            }));
                         } catch(e) { this.leads = [...this.defaultLeads]; }
                     } else {
                         this.leads = [...this.defaultLeads];
@@ -487,6 +511,142 @@ Claim your free trial & partner discount:
 
                 saveLeadsToStorage() {
                     localStorage.setItem('vyapar_partner_leads', JSON.stringify(this.leads));
+                },
+
+                // AutomateAffiliateBlogs System: Generates tailored Welcome Blog content based on SME Niche
+                generateNicheWelcomeBlog(lead) {
+                    const partnerLink = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
+                    let subject = `Welcome to Vyapar, ${lead.name}! Fast-Track ${lead.business}`;
+                    let blogContent = '';
+
+                    if (lead.niche === 'Pharmacies') {
+                        subject = `💊 How ${lead.business} Can Avoid Medicine Expiry Losses with Vyapar`;
+                        blogContent = `Hi ${lead.name},
+
+Managing batches and expiry dates at ${lead.business} shouldn't be stressful.
+
+Key Pharmacy Automation Features:
+1. Batch & Expiry Alerts: Get notified 30 days before medicines expire.
+2. Fast Thermal Billing: Print GST invoices with batch details in under 5 seconds.
+3. Automated Stock Reordering: Never run out of fast-selling drugs.
+
+Read our complete Pharmacy Growth Guide & claim your partner trial discount here:
+🔗 ${partnerLink}
+
+Best regards,
+Vyapar Partner Support`;
+                    } else if (lead.niche === 'Wholesalers') {
+                        subject = `📦 Bulk Invoicing & Credit Ledger Growth Guide for ${lead.business}`;
+                        blogContent = `Dear ${lead.name},
+
+Scaling wholesale operations requires rapid GST invoicing and tight credit tracking.
+
+Wholesaler Automation Highlights:
+1. Instant E-Invoicing & E-Way Bills directly from your smartphone.
+2. Payment Reminders via WhatsApp to collect outstanding party debts 3x faster.
+3. Multi-warehouse stock tracking across locations.
+
+Explore how top wholesalers scale operations:
+🔗 ${partnerLink}
+
+Warm regards,
+Vyapar Partner Team`;
+                    } else if (lead.niche === 'Services & CAs') {
+                        subject = `💼 Modernize Service Invoicing & GST Filing at ${lead.business}`;
+                        blogContent = `Hello ${lead.name},
+
+Streamline client billing and accounting for ${lead.business}.
+
+Service & CA Business Benefits:
+1. Professional GST & Non-GST Quotations/Estimates converted to Invoices in 1-click.
+2. GSTR-1, GSTR-3B & CA Reports exported in seconds.
+3. Digital Payment Links attached directly to client invoices.
+
+Start your free trial with partner referral benefits:
+🔗 ${partnerLink}
+
+Best regards,
+Vyapar Partner Desk`;
+                    } else {
+                        // Default: Retail & Kirana
+                        subject = `🛒 5 Ways ${lead.business} Can Cut Counter Bill Queues in Half`;
+                        blogContent = `Dear ${lead.name},
+
+Stop losing retail customers to long checkout queues at ${lead.business}.
+
+Retail Automation Checklist:
+1. Smartphone Barcode Scanner: Use your phone camera as a high-speed scanner.
+2. Bluetooth Thermal Receipt Printing: Print bills on the go.
+3. Low Stock Alerts: Automatically track fast-moving items.
+
+Claim your free trial & exclusive partner setup discount:
+🔗 ${partnerLink}
+
+Cheers,
+Vyapar Partner Team`;
+                    }
+
+                    return { subject, body: blogContent };
+                },
+
+                // Email Dispatcher Logic
+                sendWelcomeEmailBlog(lead) {
+                    if (!lead.email) {
+                        const emailInput = prompt(`No email ID found for ${lead.name}. Please enter their email:`);
+                        if (emailInput && emailInput.includes('@')) {
+                            lead.email = emailInput.trim();
+                            this.saveLeadsToStorage();
+                        } else {
+                            alert('Valid email ID is required to send the welcome blog.');
+                            return;
+                        }
+                    }
+
+                    const blogData = this.generateNicheWelcomeBlog(lead);
+                    const mailtoUrl = `mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent(blogData.subject)}&body=${encodeURIComponent(blogData.body)}`;
+                    
+                    if (lead.status === 'New') {
+                        lead.status = 'Contacted';
+                        this.saveLeadsToStorage();
+                    }
+
+                    this.logs.push(`[Email Dispatched]: Welcome blog sent to ${lead.email}`);
+                    window.location.href = mailtoUrl;
+                },
+
+                // 1-Click CSV Export Engine
+                exportToCSV() {
+                    if (this.leads.length === 0) {
+                        alert('No leads available to export.');
+                        return;
+                    }
+
+                    const headers = ['ID', 'Name', 'Business', 'Phone', 'Email', 'City', 'Niche', 'Status', 'Notes', 'FollowUpDate'];
+                    const rows = this.leads.map(lead => [
+                        `"${lead.id}"`,
+                        `"${(lead.name || '').replace(/"/g, '""')}"`,
+                        `"${(lead.business || '').replace(/"/g, '""')}"`,
+                        `"${(lead.phone || '').replace(/"/g, '""')}"`,
+                        `"${(lead.email || '').replace(/"/g, '""')}"`,
+                        `"${(lead.city || '').replace(/"/g, '""')}"`,
+                        `"${(lead.niche || '').replace(/"/g, '""')}"`,
+                        `"${(lead.status || '').replace(/"/g, '""')}"`,
+                        `"${(lead.notes || '').replace(/"/g, '""')}"`,
+                        `"${(lead.followUpDate || '').replace(/"/g, '""')}"`
+                    ]);
+
+                    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `Vyapar_Leads_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    this.logs.push(`[CSV Export]: Exported ${this.leads.length} leads successfully.`);
                 },
 
                 openLeadNotes(lead) {
@@ -515,7 +675,7 @@ Claim your free trial & partner discount:
                         return;
                     }
                     this.wizardStep = 1;
-                    this.wizardData = { name: '', business: '', phone: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' };
+                    this.wizardData = { name: '', business: '', phone: '', email: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' };
                     this.wizardLiveText = '';
                     this.wizardModal = true;
                     this.initWizardListener();
@@ -598,6 +758,7 @@ Claim your free trial & partner discount:
                         name: this.wizardData.name,
                         business: this.wizardData.business,
                         phone: this.wizardData.phone,
+                        email: '',
                         city: this.wizardData.city,
                         niche: this.wizardData.niche,
                         status: 'New',
@@ -614,7 +775,7 @@ Claim your free trial & partner discount:
                     alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
                 },
 
-                // Upgraded Robust Visiting Card OCR Scanner
+                // Upgraded Visiting Card OCR Scanner with Email Extraction
                 async scanVisitingCard(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -632,21 +793,23 @@ Claim your free trial & partner discount:
                         const fullText = text;
                         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
-                        // 1. Robust Phone Number Extraction
+                        // 1. Phone Extraction
                         const phoneMatch = fullText.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
                         let phone = '+91 98765 43210';
                         if (phoneMatch) {
                             let digits = phoneMatch[0].replace(/[^\d+]/g, '');
-                            if (digits.length === 10) {
-                                phone = '+91 ' + digits;
-                            } else if (digits.length > 10) {
-                                phone = '+' + digits.slice(-12);
-                            } else {
-                                phone = digits;
-                            }
+                            if (digits.length === 10) phone = '+91 ' + digits;
+                            else if (digits.length > 10) phone = '+' + digits.slice(-12);
                         }
 
-                        // 2. Intelligent Business Name Extraction (Prevents pulling numbers or sales headers)
+                        // 2. Email Extraction
+                        let email = '';
+                        const emailMatch = fullText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+                        if (emailMatch) {
+                            email = emailMatch[0].toLowerCase();
+                        }
+
+                        // 3. Business Name Extraction
                         let business = 'Local Business';
                         const domainMatch = fullText.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
                         if (domainMatch && domainMatch[1]) {
@@ -662,14 +825,12 @@ Claim your free trial & partner discount:
                             }
                         }
 
-                        // 3. Name Extraction (Excludes sales team/directors headers)
+                        // 4. Name Extraction
                         let name = 'Card Lead';
                         const nameLine = lines.find(l => !/sales team|director|manager|ph|www|@|p\.o\.|district/i.test(l) && l.length > 3 && !/\d/.test(l));
-                        if (nameLine) {
-                            name = nameLine;
-                        }
+                        if (nameLine) name = nameLine;
 
-                        // 4. City Extraction
+                        // 5. City Extraction
                         let city = 'Local';
                         if (/munnar/i.test(fullText)) city = 'Munnar';
                         else if (/dubai/i.test(fullText)) city = 'Dubai';
@@ -679,7 +840,7 @@ Claim your free trial & partner discount:
                         else if (/varanasi/i.test(fullText)) city = 'Varanasi';
                         else if (/india/i.test(fullText)) city = 'India Operations';
 
-                        // 5. Accurate Niche Mapping (DMC, Travel, Trips, Resorts -> Services & CAs)
+                        // 6. Niche Mapping
                         let niche = 'Retail & Kirana';
                         if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(fullText)) {
                             niche = 'Services & CAs';
@@ -695,6 +856,7 @@ Claim your free trial & partner discount:
                             name: name,
                             business: business,
                             phone: phone,
+                            email: email,
                             city: city,
                             niche: niche,
                             status: 'New',
@@ -709,7 +871,7 @@ Claim your free trial & partner discount:
                         this.saveLeadsToStorage();
                         
                         this.isScanning = false;
-                        alert(`✅ Visiting Card Scanned Successfully!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nNiche: ${newLead.niche}`);
+                        alert(`✅ Visiting Card Scanned Successfully!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nEmail: ${newLead.email || 'None'}\nNiche: ${newLead.niche}`);
                     } catch(err) {
                         this.isScanning = false;
                         alert('Error scanning visiting card: ' + err.message);
@@ -747,6 +909,7 @@ Claim your free trial & partner discount:
                         const matchesStatus = this.selectedStatus === 'all' || lead.status === this.selectedStatus;
                         const matchesSearch = lead.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
                                               lead.business.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                              (lead.email && lead.email.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
                                               lead.city.toLowerCase().includes(this.searchQuery.toLowerCase());
                         return matchesNiche && matchesStatus && matchesSearch;
                     });
