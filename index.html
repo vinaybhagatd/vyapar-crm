@@ -776,7 +776,8 @@ Vyapar Partner Team`;
                 },
 
 // Upgraded Visiting Card OCR Scanner (Restored Pure Extraction Engine)
-                async scanVisitingCard(event) {
+                
+async scanVisitingCard(event) {
                     const file = event.target.files[0];
                     if (!file) return;
 
@@ -789,19 +790,14 @@ Vyapar Partner Team`;
                         });
 
                         this.logs.push(`[OCR Extracted]: "${text.substring(0, 60)}..."`);
-
-// --- TEMPORARY DEBUG ALERT ---
-alert(`RAW OCR TEXT:\n\n${text}`);
-// -----------------------------
-
-const fullText = text;
-const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
                         
-                        const fullText = text;
+                        // Temporary debug alert
+                        alert(`RAW OCR TEXT:\n\n${text}`);
+
                         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
                         // 1. Phone Extraction
-                        const phoneMatch = fullText.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
+                        const phoneMatch = text.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
                         let phone = '+91 98765 43210';
                         if (phoneMatch) {
                             let digits = phoneMatch[0].replace(/[^\d+]/g, '');
@@ -811,14 +807,14 @@ const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
                         // 2. Email Extraction
                         let email = '';
-                        const emailMatch = fullText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+                        const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
                         if (emailMatch) {
                             email = emailMatch[0].toLowerCase();
                         }
 
                         // 3. Business Name Extraction
                         let business = 'Local Business';
-                        const domainMatch = fullText.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
+                        const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
                         if (domainMatch && domainMatch[1]) {
                             let cleanBrand = domainMatch[1].replace(/([A-Z])/g, ' $1').trim();
                             business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
@@ -839,21 +835,21 @@ const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
                         // 5. City Extraction
                         let city = 'Local';
-                        if (/munnar/i.test(fullText)) city = 'Munnar';
-                        else if (/dubai/i.test(fullText)) city = 'Dubai';
-                        else if (/mumbai/i.test(fullText)) city = 'Mumbai';
-                        else if (/delhi/i.test(fullText)) city = 'Delhi';
-                        else if (/pune/i.test(fullText)) city = 'Pune';
-                        else if (/varanasi/i.test(fullText)) city = 'Varanasi';
-                        else if (/india/i.test(fullText)) city = 'India Operations';
+                        if (/munnar/i.test(text)) city = 'Munnar';
+                        else if (/dubai/i.test(text)) city = 'Dubai';
+                        else if (/mumbai/i.test(text)) city = 'Mumbai';
+                        else if (/delhi/i.test(text)) city = 'Delhi';
+                        else if (/pune/i.test(text)) city = 'Pune';
+                        else if (/varanasi/i.test(text)) city = 'Varanasi';
+                        else if (/india/i.test(text)) city = 'India Operations';
 
                         // 6. Niche Mapping
                         let niche = 'Retail & Kirana';
-                        if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(fullText)) {
+                        if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(text)) {
                             niche = 'Services & CAs';
-                        } else if (/pharm|chemist|medical/i.test(fullText)) {
+                        } else if (/pharm|chemist|medical/i.test(text)) {
                             niche = 'Pharmacies';
-                        } else if (/wholesale|distributor|agency/i.test(fullText)) {
+                        } else if (/wholesale|distributor|agency/i.test(text)) {
                             niche = 'Wholesalers';
                         }
 
@@ -884,6 +880,8 @@ const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
                         alert('Error scanning visiting card: ' + err.message);
                     }
                 },
+
+
                 editLead(lead) {
                     this.editingLead = JSON.parse(JSON.stringify(lead));
                     this.editingLeadModal = true;
