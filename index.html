@@ -59,13 +59,13 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <h1 class="font-bold text-lg tracking-tight text-white">Vyapar Partner Suite</h1>
-                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.17 CSV Import & OCR</span>
+                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.18 Template Switcher</span>
                         </div>
-                        <p class="text-xs text-slate-400">Automated Lead Capture, CSV Import/Export & Niche Welcome Emails</p>
+                        <p class="text-xs text-slate-400">Automated Lead Capture, Multi-Script Studio & Niche Outreach</p>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-3 sm:space-x-4">
+                <div class="flex items-center space-x-4">
                     <input type="file" id="csvImportInput" @change="importFromCSV($event)" accept=".csv" class="hidden">
                     <button @click="document.getElementById('csvImportInput').click()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow" title="Import Leads from CSV">
                         <i class="fa-solid fa-file-import text-brand-400 text-sm"></i>
@@ -120,17 +120,17 @@
 
                 <!-- Card Preview & Confirmation Modal -->
                 <div x-show="showPreviewModal" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" style="display: none;">
-                    <div class="bg-slate-800 rounded-xl max-w-md w-full p-4 border border-slate-700 shadow-2xl">
-                        <h3 class="text-lg font-bold text-white mb-1">Verify Card Photo</h3>
-                        <p class="text-xs text-slate-400 mb-4">Ensure text and phone numbers are clearly readable before running OCR.</p>
+                    <div class="bg-slate-800 rounded-xl max-w-md w-full p-4 border border-slate-700">
+                        <h3 class="text-lg font-bold text-white mb-2">Verify Card Photo</h3>
+                        <p class="text-xs text-slate-400 mb-4">Ensure all text and contact numbers are clearly visible before scanning.</p>
                         
-                        <div class="bg-black rounded-lg overflow-hidden mb-4 flex items-center justify-center max-h-72 border border-slate-700">
+                        <div class="bg-black rounded-lg overflow-hidden mb-4 flex items-center justify-center max-h-72">
                             <img :src="previewImage" alt="Card Preview" class="object-contain max-h-72 w-full" />
                         </div>
                         
                         <div class="flex gap-3">
-                            <button @click="showPreviewModal = false; previewImage = null;" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-xs font-semibold">Retake / Cancel</button>
-                            <button @click="confirmAndScan()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg text-xs font-semibold shadow">Process Card</button>
+                            <button @click="showPreviewModal = false; previewImage = null;" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-medium">Retake / Cancel</button>
+                            <button @click="confirmAndScan()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg text-sm font-medium">Process Card</button>
                         </div>
                     </div>
                 </div>
@@ -266,14 +266,46 @@
                     </div>
                 </div>
 
-                <!-- Tab 2: Message Studio -->
+                <!-- Tab 2: Message Studio with Multi-Message Template Switcher -->
                 <div x-show="activeTab === 'studio'" x-cloak class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
-                    <h2 class="font-semibold text-base text-white flex items-center space-x-2">
-                        <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
-                        <span>Message Studio</span>
-                    </h2>
-                    <textarea x-model="messageText" rows="7" 
-                              class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-brand-500 leading-relaxed"></textarea>
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-base text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
+                            <span>Message Studio</span>
+                        </h2>
+                        <span class="text-xs text-slate-400">Quick Template Switcher</span>
+                    </div>
+
+                    <!-- Template Selection Bar -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-medium text-slate-300">Select Pitch Template:</label>
+                        <div class="flex gap-2">
+                            <select x-model="selectedTemplateId" @change="switchTemplate($event.target.value)" 
+                                    class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                                <template x-for="tpl in templates" :key="tpl.id">
+                                    <option :value="tpl.id" x-text="tpl.name"></option>
+                                </template>
+                            </select>
+                            <button @click="openSaveTemplateModal()" class="bg-brand-600 hover:bg-brand-500 text-white px-3 py-2 rounded-xl text-xs font-medium transition flex items-center space-x-1" title="Save current text as new template">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span class="hidden sm:inline">Save New</span>
+                            </button>
+                            <button @click="deleteCurrentTemplate()" x-show="templates.length > 1" class="bg-slate-700 hover:bg-red-900/60 text-slate-300 hover:text-red-300 border border-slate-600 px-2.5 py-2 rounded-xl text-xs transition" title="Delete selected template">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <textarea x-model="messageText" @input="updateActiveTemplateText()" rows="8" 
+                              class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-brand-500 leading-relaxed font-sans"
+                              placeholder="Type your WhatsApp message template here... Use {{owner_name}}, {{business_name}}, and {{partner_link}} as dynamic variables."></textarea>
+                    
+                    <div class="text-[11px] text-slate-400 flex flex-wrap gap-2">
+                        <span class="font-semibold text-slate-300">Available Dynamic Tags:</span>
+                        <code class="bg-slate-900 px-1.5 py-0.5 rounded text-brand-300 font-mono">{{owner_name}}</code>
+                        <code class="bg-slate-900 px-1.5 py-0.5 rounded text-brand-300 font-mono">{{business_name}}</code>
+                        <code class="bg-slate-900 px-1.5 py-0.5 rounded text-whatsapp-400 font-mono">{{partner_link}}</code>
+                    </div>
                 </div>
 
                 <!-- Tab 3: Sequential Queue Dispatch -->
@@ -348,6 +380,35 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Save New Pitch Template Modal -->
+    <div x-show="saveTemplateModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-full max-w-md space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="font-semibold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-floppy-disk text-brand-400"></i>
+                    <span>Save Pitch Template</span>
+                </h3>
+                <button @click="saveTemplateModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 mb-1 font-medium">Template Title / Pitch Script Name:</label>
+                    <input type="text" x-model="newTemplateName" placeholder="e.g., Pharmacy Expiry Pitch, Kirana Express Script" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700 text-slate-400 text-[11px]">
+                    <span class="font-semibold text-slate-300 block mb-1">Script Preview:</span>
+                    <p class="italic line-clamp-3" x-text="messageText || 'No text written yet...'"></p>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-700">
+                <button @click="saveTemplateModal = false" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs">Cancel</button>
+                <button @click="confirmSaveNewTemplate()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-xs shadow">Save Template</button>
+            </div>
         </div>
     </div>
 
@@ -475,6 +536,33 @@
                 previewImage: null,
                 showPreviewModal: false,
                 rawFile: null,
+
+                // Pitch Templates State
+                selectedTemplateId: 'kirana',
+                saveTemplateModal: false,
+                newTemplateName: '',
+                templates: [
+                    {
+                        id: 'kirana',
+                        name: '🛒 Kirana & Retail Pitch',
+                        text: `Fast-track your counter billing and stock updates with Vyapar App!\n\nDear {{owner_name}},\nAre long bill queues turning away your customers at {{business_name}}?\n\nTransform your phone into a POS counter:\n• Fast thermal receipt printing\n• Barcode scanning & low stock alerts\n\nClaim your free trial & partner discount:\n🔗 {{partner_link}}`
+                    },
+                    {
+                        id: 'pharmacy',
+                        name: '💊 Pharmacy & Expiry Pitch',
+                        text: `Avoid batch expiry losses at {{business_name}} with digital GST billing!\n\nHi {{owner_name}},\nSimplify drug batch management and expiry tracking in under 5 minutes.\n\nKey Pharmacy Features:\n1. Automatic batch & 30-day expiry alerts\n2. Rapid GST thermal invoices\n3. One-click GSTR filing reports\n\nGet started with your partner trial:\n🔗 {{partner_link}}`
+                    },
+                    {
+                        id: 'wholesaler',
+                        name: '📦 Wholesaler Credit & Ledger',
+                        text: `Collect outstanding party balances 3x faster at {{business_name}}!\n\nDear {{owner_name}},\nSend automated WhatsApp payment reminders & instant GST e-way bills.\n\nHighlights:\n• Bulk ledger & credit management\n• WhatsApp payment links\n• Multi-warehouse inventory tracking\n\nTry Vyapar App free today:\n🔗 {{partner_link}}`
+                    },
+                    {
+                        id: 'followup',
+                        name: '⏳ 24h Follow-up Reminder',
+                        text: `Hi {{owner_name}},\n\nFollowing up on our conversation regarding {{business_name}}.\n\nDid you get a chance to test the Vyapar billing app demo?\n\nClaim your setup support & partner referral offer here:\n🔗 {{partner_link}}\n\nLet me know if you need assistance!`
+                    }
+                ],
                 
                 // OCR & Wizard state
                 isScanning: false,
@@ -500,20 +588,88 @@
                     { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', email: 'info@ncpa.org', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' }
                 ],
 
-                messageText: `Fast-track your counter billing and stock updates with Vyapar App!
-
-Dear {{owner_name}},
-Are long bill queues turning away your customers at {{business_name}}?
-
-Transform your phone into a POS counter:
-• Fast thermal receipt printing
-• Barcode scanning & low stock alerts
-
-Claim your free trial & partner discount:
-🔗 {{partner_link}}`,
+                messageText: '',
 
                 init() {
+                    this.loadTemplatesFromStorage();
                     this.loadLeadsFromStorage();
+                },
+
+                loadTemplatesFromStorage() {
+                    const saved = localStorage.getItem('vyapar_pitch_templates');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                this.templates = parsed;
+                            }
+                        } catch(e) {}
+                    }
+                    const activeTpl = this.templates.find(t => t.id === this.selectedTemplateId) || this.templates[0];
+                    if (activeTpl) {
+                        this.selectedTemplateId = activeTpl.id;
+                        this.messageText = activeTpl.text;
+                    }
+                },
+
+                saveTemplatesToStorage() {
+                    localStorage.setItem('vyapar_pitch_templates', JSON.stringify(this.templates));
+                },
+
+                switchTemplate(templateId) {
+                    const tpl = this.templates.find(t => t.id === templateId);
+                    if (tpl) {
+                        this.selectedTemplateId = tpl.id;
+                        this.messageText = tpl.text;
+                        this.logs.push(`[Template Switched]: Loaded script "${tpl.name}"`);
+                    }
+                },
+
+                updateActiveTemplateText() {
+                    const tpl = this.templates.find(t => t.id === this.selectedTemplateId);
+                    if (tpl) {
+                        tpl.text = this.messageText;
+                        this.saveTemplatesToStorage();
+                    }
+                },
+
+                openSaveTemplateModal() {
+                    this.newTemplateName = '';
+                    this.saveTemplateModal = true;
+                },
+
+                confirmSaveNewTemplate() {
+                    if (!this.newTemplateName.trim()) {
+                        alert('Please enter a name for your new pitch script template.');
+                        return;
+                    }
+                    const newId = 'tpl_' + Date.now();
+                    const newTpl = {
+                        id: newId,
+                        name: '📜 ' + this.newTemplateName.trim(),
+                        text: this.messageText
+                    };
+
+                    this.templates.push(newTpl);
+                    this.selectedTemplateId = newId;
+                    this.saveTemplatesToStorage();
+                    this.saveTemplateModal = false;
+                    this.logs.push(`[Template Saved]: Created new template "${newTpl.name}"`);
+                },
+
+                deleteCurrentTemplate() {
+                    if (this.templates.length <= 1) {
+                        alert('You must keep at least one template script in the studio.');
+                        return;
+                    }
+                    const currentTpl = this.templates.find(t => t.id === this.selectedTemplateId);
+                    if (confirm(`Are you sure you want to delete template "${currentTpl.name}"?`)) {
+                        this.templates = this.templates.filter(t => t.id !== this.selectedTemplateId);
+                        this.selectedTemplateId = this.templates[0].id;
+                        this.messageText = this.templates[0].text;
+                        this.saveTemplatesToStorage();
+                        this.logs.push(`[Template Deleted]: Removed script "${currentTpl.name}"`);
+                    }
                 },
 
                 loadLeadsFromStorage() {
@@ -547,69 +703,17 @@ Claim your free trial & partner discount:
 
                     if (lead.niche === 'Pharmacies') {
                         subject = `💊 How ${lead.business} Can Avoid Medicine Expiry Losses with Vyapar`;
-                        blogContent = `Hi ${lead.name},
-
-Managing batches and expiry dates at ${lead.business} shouldn't be stressful.
-
-Key Pharmacy Automation Features:
-1. Batch & Expiry Alerts: Get notified 30 days before medicines expire.
-2. Fast Thermal Billing: Print GST invoices with batch details in under 5 seconds.
-3. Automated Stock Reordering: Never run out of fast-selling drugs.
-
-Read our complete Pharmacy Growth Guide & claim your partner trial discount here:
-🔗 ${partnerLink}
-
-Best regards,
-Vyapar Partner Support`;
+                        blogContent = `Hi ${lead.name},\n\nManaging batches and expiry dates at ${lead.business} shouldn't be stressful.\n\nKey Pharmacy Automation Features:\n1. Batch & Expiry Alerts: Get notified 30 days before medicines expire.\n2. Fast Thermal Billing: Print GST invoices with batch details in under 5 seconds.\n3. Automated Stock Reordering: Never run out of fast-selling drugs.\n\nRead our complete Pharmacy Growth Guide & claim your partner trial discount here:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Support`;
                     } else if (lead.niche === 'Wholesalers') {
                         subject = `📦 Bulk Invoicing & Credit Ledger Growth Guide for ${lead.business}`;
-                        blogContent = `Dear ${lead.name},
-
-Scaling wholesale operations requires rapid GST invoicing and tight credit tracking.
-
-Wholesaler Automation Highlights:
-1. Instant E-Invoicing & E-Way Bills directly from your smartphone.
-2. Payment Reminders via WhatsApp to collect outstanding party debts 3x faster.
-3. Multi-warehouse stock tracking across locations.
-
-Explore how top wholesalers scale operations:
-🔗 ${partnerLink}
-
-Warm regards,
-Vyapar Partner Team`;
+                        blogContent = `Dear ${lead.name},\n\nScaling wholesale operations requires rapid GST invoicing and tight credit tracking.\n\nWholesaler Automation Highlights:\n1. Instant E-Invoicing & E-Way Bills directly from your smartphone.\n2. Payment Reminders via WhatsApp to collect outstanding party debts 3x faster.\n3. Multi-warehouse stock tracking across locations.\n\nExplore how top wholesalers scale operations:\n🔗 ${partnerLink}\n\nWarm regards,\nVyapar Partner Team`;
                     } else if (lead.niche === 'Services & CAs') {
                         subject = `💼 Modernize Service Invoicing & GST Filing at ${lead.business}`;
-                        blogContent = `Hello ${lead.name},
-
-Streamline client billing and accounting for ${lead.business}.
-
-Service & CA Business Benefits:
-1. Professional GST & Non-GST Quotations/Estimates converted to Invoices in 1-click.
-2. GSTR-1, GSTR-3B & CA Reports exported in seconds.
-3. Digital Payment Links attached directly to client invoices.
-
-Start your free trial with partner referral benefits:
-🔗 ${partnerLink}
-
-Best regards,
-Vyapar Partner Desk`;
+                        blogContent = `Hello ${lead.name},\n\nStreamline client billing and accounting for ${lead.business}.\n\nService & CA Business Benefits:\n1. Professional GST & Non-GST Quotations/Estimates converted to Invoices in 1-click.\n2. GSTR-1, GSTR-3B & CA Reports exported in seconds.\n3. Digital Payment Links attached directly to client invoices.\n\nStart your free trial with partner referral benefits:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Desk`;
                     } else {
                         // Default: Retail & Kirana
                         subject = `🛒 5 Ways ${lead.business} Can Cut Counter Bill Queues in Half`;
-                        blogContent = `Dear ${lead.name},
-
-Stop losing retail customers to long checkout queues at ${lead.business}.
-
-Retail Automation Checklist:
-1. Smartphone Barcode Scanner: Use your phone camera as a high-speed scanner.
-2. Bluetooth Thermal Receipt Printing: Print bills on the go.
-3. Low Stock Alerts: Automatically track fast-moving items.
-
-Claim your free trial & exclusive partner setup discount:
-🔗 ${partnerLink}
-
-Cheers,
-Vyapar Partner Team`;
+                        blogContent = `Dear ${lead.name},\n\nStop losing retail customers to long checkout queues at ${lead.business}.\n\nRetail Automation Checklist:\n1. Smartphone Barcode Scanner: Use your phone camera as a high-speed scanner.\n2. Bluetooth Thermal Receipt Printing: Print bills on the go.\n3. Low Stock Alerts: Automatically track fast-moving items.\n\nClaim your free trial & exclusive partner setup discount:\n🔗 ${partnerLink}\n\nCheers,\nVyapar Partner Team`;
                     }
 
                     return { subject, body: blogContent };
@@ -662,7 +766,7 @@ Vyapar Partner Team`;
                     ]);
 
                     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const blob = new Blob([csvContent], { type: 'type/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     
                     const link = document.createElement('a');
@@ -706,7 +810,6 @@ Vyapar Partner Team`;
 
                     const rawHeaders = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
                     
-                    // Map headers flexibly to standard lead fields
                     const getFieldIndex = (aliases) => rawHeaders.findIndex(h => aliases.includes(h));
                     const nameIdx = getFieldIndex(['name', 'ownername', 'leadname', 'contactname', 'person']);
                     const busIdx = getFieldIndex(['business', 'businessname', 'shop', 'shopname', 'company', 'firm']);
@@ -738,7 +841,6 @@ Vyapar Partner Team`;
 
                         if (!name && !business && !phone) continue;
 
-                        // Normalize Phone
                         if (phone) {
                             let digits = phone.replace(/[^\d+]/g, '');
                             if (digits.length === 10) phone = '+91 ' + digits;
@@ -747,7 +849,6 @@ Vyapar Partner Team`;
                             phone = '+91 98765 43210';
                         }
 
-                        // Normalize Niche
                         let niche = 'Retail & Kirana';
                         const matchedNiche = validNiches.find(n => n.toLowerCase() === nicheRaw.toLowerCase());
                         if (matchedNiche) {
@@ -760,7 +861,6 @@ Vyapar Partner Team`;
                             niche = 'Services & CAs';
                         }
 
-                        // Normalize Status
                         let status = 'New';
                         const matchedStatus = validStatuses.find(s => s.toLowerCase() === statusRaw.toLowerCase());
                         if (matchedStatus) status = matchedStatus;
@@ -780,7 +880,6 @@ Vyapar Partner Team`;
                     return parsedLeads;
                 },
 
-                // 1-Click CSV Import Engine
                 importFromCSV(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -806,7 +905,6 @@ Vyapar Partner Team`;
                                 };
                             });
 
-                            // Prepend new leads to CRM list
                             this.leads = [...importedLeads, ...this.leads];
                             this.saveLeadsToStorage();
 
