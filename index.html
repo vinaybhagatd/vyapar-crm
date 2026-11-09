@@ -113,6 +113,23 @@
                     </button>
                 </div>
 
+                <!-- Card Preview & Confirmation Modal -->
+                <div x-show="showPreviewModal" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" style="display: none;">
+                    <div class="bg-slate-800 rounded-xl max-w-md w-full p-4 border border-slate-700">
+                        <h3 class="text-lg font-bold text-white mb-2">Verify Card Photo</h3>
+                        <p class="text-xs text-slate-400 mb-4">Ensure all text and contact numbers are clearly visible before scanning.</p>
+                        
+                        <div class="bg-black rounded-lg overflow-hidden mb-4 flex items-center justify-center max-h-72">
+                            <img :src="previewImage" alt="Card Preview" class="object-contain max-h-72 w-full" />
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button @click="showPreviewModal = false; previewImage = null;" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-medium">Retake / Cancel</button>
+                            <button @click="confirmAndScan()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg text-sm font-medium">Process Card</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tab 1: Leads CRM -->
                 <div x-show="activeTab === 'leads'" x-cloak class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
                     <div class="flex items-center justify-between">
@@ -159,7 +176,7 @@
                             <span>Voice Wizard</span>
                         </button>
                         
-                        <input type="file" id="cardScannerInput" @change="scanVisitingCard($event)" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="cardScannerInput" @change="handleCardSelect($event)" accept="image/*" capture="environment" class="hidden">
                         <button @click="document.getElementById('cardScannerInput').click()" class="bg-whatsapp-600 hover:bg-whatsapp-700 text-white p-2.5 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5 shadow">
                             <i class="fa-solid fa-camera"></i>
                             <span>Scan Card / Brochure</span>
@@ -449,6 +466,10 @@
                 selectedStatus: 'all',
                 searchQuery: '',
                 queueIndex: 0,
+
+                previewImage: null,
+                showPreviewModal: false,
+                rawFile: null,
                 
                 // OCR & Wizard state
                 isScanning: false,
@@ -775,10 +796,27 @@ Vyapar Partner Team`;
                     alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
                 },
 
-// Upgraded Visiting Card OCR Scanner (Restored Pure Extraction Engine)
-                
-async scanVisitingCard(event) {
+                // File Selection & Preview Confirmation Modal Flow
+                handleCardSelect(event) {
                     const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    this.rawFile = file;
+                    this.previewImage = URL.createObjectURL(file);
+                    this.showPreviewModal = true;
+                    event.target.value = '';
+                },
+
+                async confirmAndScan() {
+                    this.showPreviewModal = false;
+                    const file = this.rawFile;
+                    if (!file) return;
+
+                    await this.scanVisitingCard(file);
+                },
+
+                // Upgraded Visiting Card OCR Scanner (Restored Pure Extraction Engine)
+                async scanVisitingCard(file) {
                     if (!file) return;
 
                     this.isScanning = true;
@@ -812,9 +850,7 @@ async scanVisitingCard(event) {
                             email = emailMatch[0].toLowerCase();
                         }
 
-                        
-	// 3. Business Name Extraction & Sanitization
-
+                        // 3. Business Name Extraction & Sanitization
                         let business = 'Local Business';
                         const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
                         const ignoredDomains = ['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'rediffmail', 'aol'];
@@ -835,7 +871,6 @@ async scanVisitingCard(event) {
                         // Strip out any accidental email addresses or trailing symbols from the business name
                         business = business.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '').trim();
                         if (!business || business.length < 2) business = 'Local Business';
-
 
                         // 4. Name Extraction
                         let name = 'Card Lead';
@@ -889,7 +924,6 @@ async scanVisitingCard(event) {
                         alert('Error scanning visiting card: ' + err.message);
                     }
                 },
-
 
                 editLead(lead) {
                     this.editingLead = JSON.parse(JSON.stringify(lead));
