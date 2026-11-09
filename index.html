@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClientHub</title>
-
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="image_0.png">
     <meta name="theme-color" content="#16a34a">
-
+    <title>ClientHub - Multi-Channel CRM & Automation Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js for Interactivity -->
@@ -72,12 +71,11 @@
                         <div class="flex items-center space-x-2">
                             <h1 class="font-bold text-lg tracking-tight text-white">ClientHub</h1>
                             <span
-                                class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v4.0
-                                ClientHub Edition</span>
+                                class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v5.0
+                                Connected Commerce</span>
                         </div>
                         <p class="text-xs text-slate-400">Centralized CRM, Voice/OCR Lead Capture & Multi-Channel
-                            Automation
-                        </p>
+                            Automation</p>
                     </div>
                 </div>
 
@@ -811,7 +809,6 @@
                     localStorage.setItem('vyapar_partner_leads', JSON.stringify(this.leads));
                 },
 
-                // AutomateAffiliateBlogs System: Generates tailored Welcome Blog content based on SME Niche
                 generateNicheWelcomeBlog(lead) {
                     const partnerLink = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
                     let subject = `Welcome to Vyapar, ${lead.name}! Fast-Track ${lead.business}`;
@@ -827,7 +824,6 @@
                         subject = `💼 Modernize Service Invoicing & GST Filing at ${lead.business}`;
                         blogContent = `Hello ${lead.name},\n\nStreamline client billing and accounting for ${lead.business}.\n\nService & CA Business Benefits:\n1. Professional GST & Non-GST Quotations/Estimates converted to Invoices in 1-click.\n2. GSTR-1, GSTR-3B & CA Reports exported in seconds.\n3. Digital Payment Links attached directly to client invoices.\n\nStart your free trial with partner referral benefits:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Desk`;
                     } else {
-                        // Default: Retail & Kirana
                         subject = `🛒 5 Ways ${lead.business} Can Cut Counter Bill Queues in Half`;
                         blogContent = `Dear ${lead.name},\n\nStop losing retail customers to long checkout queues at ${lead.business}.\n\nRetail Automation Checklist:\n1. Smartphone Barcode Scanner: Use your phone camera as a high-speed scanner.\n2. Bluetooth Thermal Receipt Printing: Print bills on the go.\n3. Low Stock Alerts: Automatically track fast-moving items.\n\nClaim your free trial & exclusive partner setup discount:\n🔗 ${partnerLink}\n\nCheers,\nVyapar Partner Team`;
                     }
@@ -835,7 +831,6 @@
                     return { subject, body: blogContent };
                 },
 
-                // Email Dispatcher Logic
                 sendWelcomeEmailBlog(lead) {
                     if (!lead.email) {
                         const emailInput = prompt(`No email ID found for ${lead.name}. Please enter their email:`);
@@ -860,7 +855,6 @@
                     window.location.href = mailtoUrl;
                 },
 
-                // 1-Click CSV Export Engine
                 exportToCSV() {
                     if (this.leads.length === 0) {
                         alert('No leads available to export.');
@@ -882,12 +876,12 @@
                     ]);
 
                     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-                    const blob = new Blob([csvContent], { type: 'type/csv;charset=utf-8;' });
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
 
                     const link = document.createElement('a');
                     link.setAttribute('href', url);
-                    link.setAttribute('download', `Vyapar_Leads_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+                    link.setAttribute('download', `ClientHub_Leads_Export_${new Date().toISOString().slice(0, 10)}.csv`);
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -895,7 +889,6 @@
                     this.logs.push(`[CSV Export]: Exported ${this.leads.length} leads successfully.`);
                 },
 
-                // Robust CSV Parser (Handles Quoted Fields, Commas, and Flexible Headers)
                 parseCSVText(text) {
                     const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
                     if (lines.length < 2) return [];
@@ -925,7 +918,6 @@
                     };
 
                     const rawHeaders = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
-
                     const getFieldIndex = (aliases) => rawHeaders.findIndex(h => aliases.includes(h));
                     const nameIdx = getFieldIndex(['name', 'ownername', 'leadname', 'contactname', 'person']);
                     const busIdx = getFieldIndex(['business', 'businessname', 'shop', 'shopname', 'company', 'firm']);
@@ -1007,7 +999,7 @@
                             const newEntries = this.parseCSVText(csvText);
 
                             if (newEntries.length === 0) {
-                                alert('⚠️ No valid lead records found in the selected CSV file.\n\nPlease ensure your CSV has headers like: Name, Business, Phone, Email, City, Niche, Status.');
+                                alert('⚠️ No valid lead records found in the selected CSV file.');
                                 event.target.value = '';
                                 return;
                             }
@@ -1015,10 +1007,7 @@
                             let maxId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) : 0;
                             const importedLeads = newEntries.map(entry => {
                                 maxId++;
-                                return {
-                                    id: maxId,
-                                    ...entry
-                                };
+                                return { id: maxId, ...entry };
                             });
 
                             this.leads = [...importedLeads, ...this.leads];
@@ -1060,7 +1049,6 @@
                     this.activeLeadForNotes = null;
                 },
 
-                // Field-by-Field Voice Wizard Logic
                 startVoiceWizard() {
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                     if (!SpeechRecognition) {
@@ -1168,7 +1156,6 @@
                     alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
                 },
 
-                // File Selection & Preview Confirmation Modal Flow
                 handleCardSelect(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -1187,7 +1174,6 @@
                     await this.scanVisitingCard(file);
                 },
 
-                // Upgraded Visiting Card OCR Scanner (Restored Pure Extraction Engine)
                 async scanVisitingCard(file) {
                     if (!file) return;
 
@@ -1200,13 +1186,8 @@
                         });
 
                         this.logs.push(`[OCR Extracted]: "${text.substring(0, 60)}..."`);
-
-                        // Temporary debug alert
-                        alert(`RAW OCR TEXT:\n\n${text}`);
-
                         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
-                        // 1. Phone Extraction
                         const phoneMatch = text.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
                         let phone = '+91 98765 43210';
                         if (phoneMatch) {
@@ -1215,14 +1196,10 @@
                             else if (digits.length > 10) phone = '+' + digits.slice(-12);
                         }
 
-                        // 2. Email Extraction
                         let email = '';
                         const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
-                        if (emailMatch) {
-                            email = emailMatch[0].toLowerCase();
-                        }
+                        if (emailMatch) email = emailMatch[0].toLowerCase();
 
-                        // 3. Business Name Extraction & Sanitization
                         let business = 'Local Business';
                         const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
                         const ignoredDomains = ['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'rediffmail', 'aol'];
@@ -1232,24 +1209,20 @@
                             business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
                         } else {
                             const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc|travel|agency/i.test(l) && !/@/i.test(l));
-                            if (businessLine) {
-                                business = businessLine;
-                            } else {
+                            if (businessLine) business = businessLine;
+                            else {
                                 const validLine = lines.find(l => !/sales team|director|manager|ph|www|@/i.test(l) && l.length > 4 && !/\d/.test(l));
                                 if (validLine) business = validLine;
                             }
                         }
 
-                        // Strip out any accidental email addresses or trailing symbols from the business name
                         business = business.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '').trim();
                         if (!business || business.length < 2) business = 'Local Business';
 
-                        // 4. Name Extraction
                         let name = 'Card Lead';
                         const nameLine = lines.find(l => !/sales team|director|manager|ph|www|@|p\.o\.|district/i.test(l) && l.length > 3 && !/\d/.test(l));
                         if (nameLine) name = nameLine;
 
-                        // 5. City Extraction
                         let city = 'Local';
                         if (/munnar/i.test(text)) city = 'Munnar';
                         else if (/dubai/i.test(text)) city = 'Dubai';
@@ -1259,7 +1232,6 @@
                         else if (/varanasi/i.test(text)) city = 'Varanasi';
                         else if (/india/i.test(text)) city = 'India Operations';
 
-                        // 6. Niche Mapping
                         let niche = 'Retail & Kirana';
                         if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(text)) {
                             niche = 'Services & CAs';
@@ -1377,21 +1349,16 @@
             }
         }
     </script>
-
-
     <!-- Service Worker Registration for PWA Offline Support -->
     <script>
-        
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(reg => console.log('ServiceWorker registered successfully:', reg.scope))
-            .catch(err => console.log('ServiceWorker registration failed:', err));
-    });
-}
-
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('ServiceWorker registered successfully:', reg.scope))
+                    .catch(err => console.log('ServiceWorker registration failed:', err));
+            });
+        }
     </script>
-
 </body>
 
 </html>
