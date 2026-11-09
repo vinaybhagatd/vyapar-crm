@@ -59,13 +59,18 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <h1 class="font-bold text-lg tracking-tight text-white">Vyapar Partner Suite</h1>
-                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.16 CSV & Email Blog</span>
+                            <span class="bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs px-2 py-0.5 rounded-full font-medium">v3.17 CSV Import & OCR</span>
                         </div>
-                        <p class="text-xs text-slate-400">Automated Lead Capture, CSV Export & Niche Welcome Emails</p>
+                        <p class="text-xs text-slate-400">Automated Lead Capture, CSV Import/Export & Niche Welcome Emails</p>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <input type="file" id="csvImportInput" @change="importFromCSV($event)" accept=".csv" class="hidden">
+                    <button @click="document.getElementById('csvImportInput').click()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow" title="Import Leads from CSV">
+                        <i class="fa-solid fa-file-import text-brand-400 text-sm"></i>
+                        <span>Import CSV</span>
+                    </button>
                     <button @click="exportToCSV()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow">
                         <i class="fa-solid fa-file-csv text-whatsapp-400 text-sm"></i>
                         <span>Export CSV</span>
@@ -115,17 +120,17 @@
 
                 <!-- Card Preview & Confirmation Modal -->
                 <div x-show="showPreviewModal" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" style="display: none;">
-                    <div class="bg-slate-800 rounded-xl max-w-md w-full p-4 border border-slate-700">
-                        <h3 class="text-lg font-bold text-white mb-2">Verify Card Photo</h3>
-                        <p class="text-xs text-slate-400 mb-4">Ensure all text and contact numbers are clearly visible before scanning.</p>
+                    <div class="bg-slate-800 rounded-xl max-w-md w-full p-4 border border-slate-700 shadow-2xl">
+                        <h3 class="text-lg font-bold text-white mb-1">Verify Card Photo</h3>
+                        <p class="text-xs text-slate-400 mb-4">Ensure text and phone numbers are clearly readable before running OCR.</p>
                         
-                        <div class="bg-black rounded-lg overflow-hidden mb-4 flex items-center justify-center max-h-72">
+                        <div class="bg-black rounded-lg overflow-hidden mb-4 flex items-center justify-center max-h-72 border border-slate-700">
                             <img :src="previewImage" alt="Card Preview" class="object-contain max-h-72 w-full" />
                         </div>
                         
                         <div class="flex gap-3">
-                            <button @click="showPreviewModal = false; previewImage = null;" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-medium">Retake / Cancel</button>
-                            <button @click="confirmAndScan()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg text-sm font-medium">Process Card</button>
+                            <button @click="showPreviewModal = false; previewImage = null;" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-xs font-semibold">Retake / Cancel</button>
+                            <button @click="confirmAndScan()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg text-xs font-semibold shadow">Process Card</button>
                         </div>
                     </div>
                 </div>
@@ -668,6 +673,159 @@ Vyapar Partner Team`;
                     document.body.removeChild(link);
 
                     this.logs.push(`[CSV Export]: Exported ${this.leads.length} leads successfully.`);
+                },
+
+                // Robust CSV Parser (Handles Quoted Fields, Commas, and Flexible Headers)
+                parseCSVText(text) {
+                    const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+                    if (lines.length < 2) return [];
+
+                    const parseLine = (line) => {
+                        const result = [];
+                        let cur = '';
+                        let inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const c = line[i];
+                            if (c === '"') {
+                                if (inQuotes && line[i+1] === '"') {
+                                    cur += '"';
+                                    i++;
+                                } else {
+                                    inQuotes = !inQuotes;
+                                }
+                            } else if (c === ',' && !inQuotes) {
+                                result.push(cur.trim());
+                                cur = '';
+                            } else {
+                                cur += c;
+                            }
+                        }
+                        result.push(cur.trim());
+                        return result;
+                    };
+
+                    const rawHeaders = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                    
+                    // Map headers flexibly to standard lead fields
+                    const getFieldIndex = (aliases) => rawHeaders.findIndex(h => aliases.includes(h));
+                    const nameIdx = getFieldIndex(['name', 'ownername', 'leadname', 'contactname', 'person']);
+                    const busIdx = getFieldIndex(['business', 'businessname', 'shop', 'shopname', 'company', 'firm']);
+                    const phoneIdx = getFieldIndex(['phone', 'mobile', 'phonenumber', 'mobilenumber', 'contact', 'tel']);
+                    const emailIdx = getFieldIndex(['email', 'emailid', 'emailaddress', 'mail']);
+                    const cityIdx = getFieldIndex(['city', 'location', 'town', 'district', 'place']);
+                    const nicheIdx = getFieldIndex(['niche', 'category', 'segment', 'type', 'industry']);
+                    const statusIdx = getFieldIndex(['status', 'leadstatus', 'stage']);
+                    const notesIdx = getFieldIndex(['notes', 'note', 'remarks', 'followup', 'comments']);
+                    const dateIdx = getFieldIndex(['followupdate', 'targetdate', 'date', 'duedate']);
+
+                    const validNiches = ['Retail & Kirana', 'Pharmacies', 'Wholesalers', 'Services & CAs'];
+                    const validStatuses = ['New', 'Contacted', 'Replied', 'Converted'];
+
+                    const parsedLeads = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const row = parseLine(lines[i]);
+                        if (row.length === 0 || row.every(val => val === '')) continue;
+
+                        let name = nameIdx !== -1 ? row[nameIdx] : '';
+                        let business = busIdx !== -1 ? row[busIdx] : '';
+                        let phone = phoneIdx !== -1 ? row[phoneIdx] : '';
+                        let email = emailIdx !== -1 ? row[emailIdx] : '';
+                        let city = cityIdx !== -1 ? row[cityIdx] : '';
+                        let nicheRaw = nicheIdx !== -1 ? row[nicheIdx] : '';
+                        let statusRaw = statusIdx !== -1 ? row[statusIdx] : '';
+                        let notes = notesIdx !== -1 ? row[notesIdx] : '';
+                        let followUpDate = dateIdx !== -1 ? row[dateIdx] : '';
+
+                        if (!name && !business && !phone) continue;
+
+                        // Normalize Phone
+                        if (phone) {
+                            let digits = phone.replace(/[^\d+]/g, '');
+                            if (digits.length === 10) phone = '+91 ' + digits;
+                            else if (digits.length > 10) phone = '+' + digits.slice(-12);
+                        } else {
+                            phone = '+91 98765 43210';
+                        }
+
+                        // Normalize Niche
+                        let niche = 'Retail & Kirana';
+                        const matchedNiche = validNiches.find(n => n.toLowerCase() === nicheRaw.toLowerCase());
+                        if (matchedNiche) {
+                            niche = matchedNiche;
+                        } else if (/pharm|chemist|medical/i.test(nicheRaw)) {
+                            niche = 'Pharmacies';
+                        } else if (/wholesale|distribut/i.test(nicheRaw)) {
+                            niche = 'Wholesalers';
+                        } else if (/service|ca|consult|travel|tour|hotel/i.test(nicheRaw)) {
+                            niche = 'Services & CAs';
+                        }
+
+                        // Normalize Status
+                        let status = 'New';
+                        const matchedStatus = validStatuses.find(s => s.toLowerCase() === statusRaw.toLowerCase());
+                        if (matchedStatus) status = matchedStatus;
+
+                        parsedLeads.push({
+                            name: name || 'CSV Lead',
+                            business: business || 'Local Business',
+                            phone: phone,
+                            email: email || '',
+                            city: city || 'Local',
+                            niche: niche,
+                            status: status,
+                            notes: notes || '',
+                            followUpDate: followUpDate || ''
+                        });
+                    }
+                    return parsedLeads;
+                },
+
+                // 1-Click CSV Import Engine
+                importFromCSV(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const csvText = e.target.result;
+                            const newEntries = this.parseCSVText(csvText);
+
+                            if (newEntries.length === 0) {
+                                alert('⚠️ No valid lead records found in the selected CSV file.\n\nPlease ensure your CSV has headers like: Name, Business, Phone, Email, City, Niche, Status.');
+                                event.target.value = '';
+                                return;
+                            }
+
+                            let maxId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) : 0;
+                            const importedLeads = newEntries.map(entry => {
+                                maxId++;
+                                return {
+                                    id: maxId,
+                                    ...entry
+                                };
+                            });
+
+                            // Prepend new leads to CRM list
+                            this.leads = [...importedLeads, ...this.leads];
+                            this.saveLeadsToStorage();
+
+                            this.selectedNiche = 'all';
+                            this.selectedStatus = 'all';
+                            this.searchQuery = '';
+
+                            this.logs.push(`[CSV Import]: Successfully imported ${importedLeads.length} leads.`);
+                            alert(`✅ CSV Import Successful!\n\nImported ${importedLeads.length} lead(s) into your Leads CRM.`);
+                        } catch (err) {
+                            alert('Error reading CSV file: ' + err.message);
+                        }
+                        event.target.value = '';
+                    };
+                    reader.onerror = () => {
+                        alert('Failed to read the file.');
+                        event.target.value = '';
+                    };
+                    reader.readAsText(file);
                 },
 
                 openLeadNotes(lead) {
