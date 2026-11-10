@@ -652,6 +652,14 @@
                 showPreviewModal: false,
                 rawFile: null,
 
+
+                editingLeadModal: false,
+                editingLead: null,
+                legalModal: false, // Added state for legal modal
+                logs: [],
+                leads: [],
+
+
                 // Pitch Templates State
                 selectedTemplateId: 'kirana',
                 saveTemplateModal: false,
@@ -1360,11 +1368,68 @@
             });
         }
     </script>
+
+
+    <!-- Legal Modal Component -->
+    <div x-show="legalModal" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+        <div
+            class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] flex flex-col space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="font-bold text-white text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-brand-400"></i>
+                    <span>ClientHub Privacy Policy & Terms of Service</span>
+                </h3>
+                <button @click="legalModal = false" class="text-slate-400 hover:text-white"><i
+                        class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2 leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-white mb-1">1. Privacy Policy & Local Storage</h4>
+                    <p>ClientHub operates on a local-first architecture. All lead CRM records, follow-up reminder notes,
+                        and pitch templates are stored securely in your browser's local storage
+                        (<code>localStorage</code>). We do not collect, transmit, or store your personal client data on
+                        external servers.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1">2. Hardware & Permission Disclosures</h4>
+                    <p>ClientHub requests temporary hardware access solely for core productivity features:
+                        <strong>Microphone</strong> access for the Voice Wizard speech recognition, and
+                        <strong>Camera</strong> access for Visiting Card OCR scanning. Audio and image processing occur
+                        client-side on your device in real-time.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1">3. Terms of Service & Acceptable Use</h4>
+                    <p>By using ClientHub, you agree to use the application responsibly for legitimate sales automation,
+                        CRM management, and customer outreach. You retain 100% ownership of your exported CSV data.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1">4. Intellectual Property & Copyright Notice</h4>
+                    <p>© 2026 ClientHub. All Rights Reserved. The software architecture, source code, UI/UX design, and
+                        master icon (<code>Icon-ClientHub-v1.1.png</code>) are proprietary assets protected under
+                        international copyright laws.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-3 border-t border-slate-700">
+                <button @click="legalModal = false"
+                    class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs shadow">Close
+                    & Return</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer with Working Trigger -->
     <footer class="mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-800">
         <span>ClientHub v5.0 • All Rights Reserved.</span>
         <span class="mx-2">•</span>
-        <button @click="legalModal = true" class="text-brand-400 hover:underline">Privacy & Legal Terms</button>
+        <button @click="legalModal = true" class="text-brand-400 hover:underline cursor-pointer">Privacy & Legal
+            Terms</button>
     </footer>
+
+
 </body>
 
 </html>
