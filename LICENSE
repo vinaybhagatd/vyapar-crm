@@ -1,1 +1,147 @@
-Copyright (c) 2026 Vinay Bhagat. All rights reserved.
+<!-- Copyright (c) 2026 ClientHub. All Rights Reserved. -->
+CLIENTHUB LEGAL DOCUMENTS & COMPLIANCE AGREEMENT
+Effective Date: November 10, 2026
+
+Last Updated: November 10, 2026
+
+Application Title: ClientHub (v5.0 Connected Commerce Edition)
+
+Hosted Location: https://vinaybhagatd.github.io/vyapar-crm/
+
+
+PART 1: PRIVACY POLICY & DATA PROTECTION NOTICE
+1. Introduction & Architecture Overview
+ClientHub ("the Application," "we," "us," or "our") operates as a Progressive Web Application (PWA) designed for field
+sales automation, lead capture, and multi-channel marketing outreach.
+
+ClientHub is designed around a Client-Side First / Local Storage Architecture. All lead metadata (names, phone numbers,
+email addresses, SME niche categories, notes, and follow-up schedules) are stored and processed locally within your
+device's web browser storage (localStorage and Web Cache). We do not operate a centralized cloud database that collects,
+harvests, or sells your client or lead data.
+
+
+2. Information We Process & How It Is Collected
+A. User-Provided Data & Lead Records
+• Lead CRM Data: Information manually entered, imported via CSV files, captured through voice recognition (Voice
+Wizard), or extracted via optical character recognition (Visiting Card OCR Scanner).
+
+• Communication Templates: Custom sales pitch scripts, outreach messages, and follow-up reminders created within the
+Message Studio.
+
+B. Hardware Permissions & Device Access
+ClientHub requests real-time access to device hardware only when explicitly initiated by the user:
+
+
+• Microphone Access (Voice Wizard): Used exclusively to transcribe spoken text into structured CRM input fields via the
+browser’s native Web Speech API (webkitSpeechRecognition). Audio streams are processed in real-time and are never
+recorded, stored, or transmitted to our servers.
+
+• Camera Access & Photo Uploads (Visiting Card OCR Scanner): Used exclusively to capture or upload images of visiting
+cards, brochures, or business documents. Images are processed locally on-device using Tesseract.js for optical text
+extraction. Photos are not saved to any external remote server.
+
+3. Regulatory Compliance: GDPR & DPDP Act
+ClientHub strictly complies with the General Data Protection Regulation (GDPR - Regulation (EU) 2016/679) and the
+Digital Personal Data Protection Act (DPDP Act 2023, India).
+
+
+A. Lawful Basis for Processing
+• Consent: Hardware permissions (Microphone, Camera) are granted explicitly by the user on a per-action basis.
+
+• Legitimate Interest: Data processed within the CRM is strictly for the business execution purposes of the user.
+
+B. Data Subject Rights
+Users possess full control over their personal and client data under applicable data privacy laws:
+
+
+• Right to Access & Data Portability: Users can export their entire lead database at any time into a standard,
+machine-readable format using the Export CSV feature.
+
+• Right to Erasure (Right to be Forgotten): Users can permanently delete individual lead records using the single-click
+deletion button (deleteLead()) or clear all execution logs. Clearing browser storage removes all cached records
+permanently.
+
+• Right to Rectification: Users can edit and update any stored lead profile in real-time via the built-in Lead Editing
+Interface.
+
+4. Third-Party Libraries & External Links
+ClientHub utilizes open-source content delivery networks (CDNs) for client-side rendering and UI processing:
+
+
+• Tailwind CSS & FontAwesome: Loaded for interface styling and icon rendering.
+
+• Alpine.js & Tesseract.js: Executed client-side for dynamic UI binding and optical character recognition.
+
+• External Outreach Protocols: ClientHub generates standard https://web.whatsapp.com/ deep links and standard mailto:
+mail links. Triggering these actions hands over processing to the respective third-party applications (WhatsApp / Native
+Email Client) under their separate privacy policies.
+
+5. Contact Information
+For privacy inquiries, compliance disclosures, or legal requests regarding ClientHub, please direct communications to:
+
+
+• Project Repository: https://vinaybhagatd.github.io/vyapar-crm/
+
+PART 2: TERMS OF SERVICE & CODE LICENSE AGREEMENT
+1. Acceptance of Terms
+By accessing, installing as a PWA, or using ClientHub, you agree to be legally bound by these Terms of Service. If you
+do not agree to these terms, you must cease using the Application immediately and remove the PWA shortcut from your
+device.
+
+
+2. Intellectual Property & Code Ownership
+A. Proprietary Rights Notice
+All source code, software architecture, UI layout designs, graphics, branding, and visual assets associated with
+ClientHub (including index.html, manifest.json, sw.js, and the master icon Icon-ClientHub-v1.1.png) are protected under
+international copyright laws and applicable trademark protections.
+
+
+B. Restrictions on Use
+Unless explicitly licensed under a separate written agreement, users and third parties are strictly prohibited from:
+
+
+• Reverse-engineering, decompiling, or attempting to derive the proprietary source logic of ClientHub for unauthorized
+commercial resale.
+
+• Rebranding or redistributing ClientHub under a different product name without attribution.
+
+• Removing any copyright, trademark, or legal notices embedded within the application source files.
+
+3. Acceptable Use Policy
+Users agree not to utilize ClientHub to:
+
+
+• Send unsolicited bulk messages (SPAM) in violation of WhatsApp Terms of Service, anti-spam legislation, or telecom
+regulatory directives (e.g., TRAI DND regulations).
+
+• Harvest, process, or store personal data of individuals without authorization or in violation of local privacy
+regulations.
+
+• Engage in fraudulent, misleading, or illegal marketing practices.
+
+We reserve the right to restrict access to hosted PWA updates for users found violating acceptable use policies.
+
+
+4. Disclaimer of Warranties & Limitation of Liability
+A. "As-Is" Provision
+ClientHub is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind, either express or implied,
+including but not limited to implied warranties of merchantability, fitness for a particular purpose, or
+non-infringement.
+
+
+B. Hardware & Operating System Variations
+We do not guarantee uninterrupted performance across all mobile hardware or operating systems. Specifically, voice
+recognition performance in standalone PWA containers is subject to Apple WebKit sandbox policies and iOS browser engine
+constraints.
+
+
+C. Limitation of Liability
+In no event shall the authors, developers, or copyright holders of ClientHub be liable for any direct, indirect,
+incidental, special, or consequential damages (including loss of lead data, business interruption, or device failure)
+arising out of the use or inability to use the application.
+
+
+5. Governing Law & Jurisdiction
+These Terms of Service shall be governed by and construed in accordance with applicable federal and international
+intellectual property laws. Any legal disputes arising out of the use of ClientHub shall be subject to exclusive
+jurisdiction in the operating jurisdiction of the repository owners.
