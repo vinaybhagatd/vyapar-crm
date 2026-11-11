@@ -640,702 +640,699 @@
     </div>
 
     /**
-    * Preprocesses a captured camera image and runs Tesseract.js OCR.
-    * @param {File | Blob} imageFile - The image file captured from the device camera.
-    * @returns {Promise<string>} - The raw extracted text from the card.
-        */
-        async function scanBusinessCard(imageFile) {
-        try {
-        console.log("Step 1: Loading image into canvas for preprocessing...");
-        const processedImageUrl = await preprocessImageForOCR(imageFile);
+    * Parses raw text from Tesseract.js into structured contact fields.
+    * @param {string} rawText - The raw string output from Tesseract OCR.
+    * @returns {Object} - Structured object containing Name, Business, Phone, Email, and Niche.
+    */
+    function parseBusinessCardText(rawText) {
+    // 1. Clean and split text into clean non-empty lines
+    const lines = rawText
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
 
-        console.log("Step 2: Initializing Tesseract worker...");
-        // Initialize Tesseract worker for English (add other language codes if needed, e.g., 'eng+hin')
-        const worker = await Tesseract.createWorker('eng');
+    let result = {
+    name: '',
+    business: '',
+    phone: '',
+    email: '',
+    Niche: 'General' // Default fallback
+    };
 
-        console.log("Step 3: Running OCR on processed image...");
-        const { data: { text } } = await worker.recognize(processedImageUrl);
+    // 2. Extract Email using standard Regex
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const foundEmails = rawText.match(emailRegex);
+    if (foundEmails && foundEmails.length > 0) {
+    result.email = foundEmails[0]; // Take the first valid email found
+    }
 
-        // Terminate worker to free up mobile browser memory
-        await worker.terminate();
+    // 3. Extract Phone Number using flexible international/local Regex
+    // Matches patterns like +91 98765 43210, (040) 1234567, 9876543210
+    const phoneRegex = /(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{2,4}\)?[\s-]?)?\d{3,5}[\s-]?\d{4,6}/g;
+    const foundPhones = rawText.match(phoneRegex);
+    if (foundPhones && foundPhones.length > 0) {
+    // Filter out strings that look like zip codes or years (must have at least 7 digits)
+    const validPhone = foundPhones.find(p => p.replace(/\D/g, '').length >= 7);
+    if (validPhone) {
+    result.phone = validPhone.trim();
+    }
+    }
 
-        console.log("OCR Extraction Complete!");
-        return text;
+    // 4. Exclude noise lines for heuristics (lines containing emails, phones, or URLs)
+    const filteredLines = lines.filter(line => {
+    return !emailRegex.test(line) &&
+    !phoneRegex.test(line) &&
+    !line.toLowerCase().includes('http') &&
+    !line.toLowerCase().includes('www');
+    });
 
-        } catch (error) {
-        console.error("OCR Scanning failed:", error);
-        throw error;
+    // 5. Heuristic: Extract Business Name
+    // Usually contains corporate suffixes or is found near the top/bottom
+    const corporateKeywords =
+    /\b(pvt|ltd|llp|inc|corp|solutions|enterprises|industries|services|traders|agency|studio|group)\b/i;
+
+    for (let line of filteredLines) {
+    if (corporateKeywords.test(line)) {
+    result.business = line;
+    break;
+    }
+    }
+    // Fallback if no corporate keyword matched: pick the longest uppercase/title case line near the top
+    if (!result.business && filteredLines.length > 1) {
+    result.business = filteredLines.find(l => l.length > 5 && l !== result.name) || '';
+    }
+
+    // 6. Heuristic: Extract Person Name (Process of elimination)
+    // Names usually do not contain numbers, email symbols, or corporate tags, and are 2-4 words.
+    const skipKeywords = new RegExp(corporateKeywords.source +
+    '|manager|director|ceo|cto|founder|owner|lead|sales|consultant|ph\\.|md\\.', 'i');
+
+    for (let line of filteredLines) {
+    if (skipKeywords.test(line)) continue;
+    if (line === result.business) continue;
+
+    // Check if line contains digits or symbols
+    if (/[0-9@#&+=_%]/.test(line)) continue;
+
+    const words = line.split(/\s+/);
+    if (words.length >= 2 && words.length <= 4 && line.length < 35) { result.name=line; break; } } // Fallback name if
+        strict filter fails: take the very first clean line if (!result.name && filteredLines.length> 0) {
+        result.name = filteredLines[0];
         }
+
+        // 7. Heuristic: Categorize Niche based on keyword matching
+        result.Niche = inferNicheFromText(rawText);
+
+        return result;
         }
 
         /**
-        * Preprocessing helper: Converts image to high-contrast grayscale to remove background noise.
+        * Heuristic helper to categorize the business niche based on keywords.
         */
-        function preprocessImageForOCR(file) {
-        return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        function inferNicheFromText(text) {
+        const lowerText = text.toLowerCase();
 
-        // Resize image for optimal OCR speed (max width 1200px preserves fine text details)
-        const maxWidth = 1200;
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
+        if (/pharm|med|clinic|health|hospital|dr\.|doctor|chemist/.test(lowerText)) return 'Healthcare / Pharmacy';
+        if (/retail|store|shop|mart|garment|fashion|apparel/.test(lowerText)) return 'Retail / Shop';
+        if (/wholesale|distributor|suppli|export|import|bulk/.test(lowerText)) return 'Wholesale / Distribution';
+        if (/tech|software|IT|digital|web|cyber|computer/.test(lowerText)) return 'Technology / IT';
+        if (/build|construct|real estate|property|infra|architect/.test(lowerText)) return 'Real Estate / Construction';
+        if (/food|cafe|restaurant|hotel|bakers|catering/.test(lowerText)) return 'Food & Hospitality';
+
+        return 'General / Services';
         }
 
-        canvas.width = width;
-        canvas.height = height;
 
-        // Draw image onto canvas
-        ctx.drawImage(img, 0, 0, width, height);
+        /**
+        * Preprocesses a captured camera image and runs Tesseract.js OCR.
+        * @param {File | Blob} imageFile - The image file captured from the device camera.
+        * @returns {Promise<string>} - The raw extracted text from the card.
+            */
+            async function scanBusinessCard(imageFile) {
+            try {
+            console.log("Step 1: Loading image into canvas for preprocessing...");
+            const processedImageUrl = await preprocessImageForOCR(imageFile);
 
-        // Get image pixel data for manipulation
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
+            console.log("Step 2: Initializing Tesseract worker...");
+            // Initialize Tesseract worker for English (add other language codes if needed, e.g., 'eng+hin')
+            const worker = await Tesseract.createWorker('eng');
 
-        // Apply Grayscale & Contrast Boosting (Thresholding effect)
-        const contrastFactor = 1.5; // Adjust contrast multiplier (>1 increases contrast)
+            console.log("Step 3: Running OCR on processed image...");
+            const { data: { text } } = await worker.recognize(processedImageUrl);
 
-        for (let i = 0; i < data.length; i +=4) { // Convert RGB to weighted grayscale let gray=0.299 * data[i] + 0.587
-            * data[i + 1] + 0.114 * data[i + 2]; // Boost contrast around midtone (128) gray=facteurContrast(gray,
-            contrastFactor); data[i]=gray; // Red data[i + 1]=gray; // Green data[i + 2]=gray; // Blue // Alpha channel
-            (data[i+3]) remains untouched } // Put modified pixels back onto canvas ctx.putImageData(imgData, 0, 0); //
-            Export as clean JPEG data URL resolve(canvas.toDataURL('image/jpeg', 0.9)); }; img.onerror=reject;
-            img.src=event.target.result; }; reader.onerror=reject; reader.readAsDataURL(file); }); } // Helper function
-            for contrast adjustment function facteurContrast(value, factor) { let newVal=factor * (value - 128) + 128;
-            return newVal < 0 ? 0 : newVal> 255 ? 255 : newVal;
+            // Terminate worker to free up mobile browser memory
+            await worker.terminate();
+
+            console.log("OCR Extraction Complete!");
+            return text;
+
+            } catch (error) {
+            console.error("OCR Scanning failed:", error);
+            throw error;
+            }
             }
 
+            /**
+            * Preprocessing helper: Converts image to high-contrast grayscale to remove background noise.
+            */
+            function preprocessImageForOCR(file) {
+            return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
 
-            <!-- Application Script -->
-            <script>
-                function whatsappApp() {
-                    return {
-                        activeTab: 'leads',
-                        partnerCode: 'ZNNQ2XK',
-                        selectedNiche: 'all',
-                        selectedStatus: 'all',
-                        searchQuery: '',
-                        queueIndex: 0,
+            // Resize image for optimal OCR speed (max width 1200px preserves fine text details)
+            const maxWidth = 1200;
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+            }
 
-                        previewImage: null,
-                        showPreviewModal: false,
-                        rawFile: null,
+            canvas.width = width;
+            canvas.height = height;
+
+            // Draw image onto canvas
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Get image pixel data for manipulation
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+
+            // Apply Grayscale & Contrast Boosting (Thresholding effect)
+            const contrastFactor = 1.5; // Adjust contrast multiplier (>1 increases contrast)
+
+            for (let i = 0; i < data.length; i +=4) { // Convert RGB to weighted grayscale let gray=0.299 * data[i] +
+                0.587 * data[i + 1] + 0.114 * data[i + 2]; // Boost contrast around midtone (128)
+                gray=facteurContrast(gray, contrastFactor); data[i]=gray; // Red data[i + 1]=gray; // Green data[i +
+                2]=gray; // Blue // Alpha channel (data[i+3]) remains untouched } // Put modified pixels back onto
+                canvas ctx.putImageData(imgData, 0, 0); // Export as clean JPEG data URL
+                resolve(canvas.toDataURL('image/jpeg', 0.9)); }; img.onerror=reject; img.src=event.target.result; };
+                reader.onerror=reject; reader.readAsDataURL(file); }); } // Helper function for contrast adjustment
+                function facteurContrast(value, factor) { let newVal=factor * (value - 128) + 128; return newVal < 0 ? 0
+                : newVal> 255 ? 255 : newVal;
+                }
 
 
-                        editingLeadModal: false,
-                        editingLead: null,
-                        legalModal: false, // Added state for legal modal
-                        logs: [],
-                        leads: [],
+                <!-- Application Script -->
+                <script>
+                    function whatsappApp() {
+                        return {
+                            activeTab: 'leads',
+                            partnerCode: 'ZNNQ2XK',
+                            selectedNiche: 'all',
+                            selectedStatus: 'all',
+                            searchQuery: '',
+                            queueIndex: 0,
+
+                            previewImage: null,
+                            showPreviewModal: false,
+                            rawFile: null,
 
 
-                        // Pitch Templates State
-                        selectedTemplateId: 'kirana',
-                        saveTemplateModal: false,
-                        newTemplateName: '',
-                        templates: [
-                            {
-                                id: 'kirana',
-                                name: '🛒 Kirana & Retail Pitch',
-                                text: `Fast-track your counter billing and stock updates with Vyapar App!\n\nDear {{owner_name}},\nAre long bill queues turning away your customers at {{business_name}}?\n\nTransform your phone into a POS counter:\n• Fast thermal receipt printing\n• Barcode scanning & low stock alerts\n\nClaim your free trial & partner discount:\n🔗 {{partner_link}}`
+                            editingLeadModal: false,
+                            editingLead: null,
+                            legalModal: false, // Added state for legal modal
+                            logs: [],
+                            leads: [],
+
+
+                            // Pitch Templates State
+                            selectedTemplateId: 'kirana',
+                            saveTemplateModal: false,
+                            newTemplateName: '',
+                            templates: [
+                                {
+                                    id: 'kirana',
+                                    name: '🛒 Kirana & Retail Pitch',
+                                    text: `Fast-track your counter billing and stock updates with Vyapar App!\n\nDear {{owner_name}},\nAre long bill queues turning away your customers at {{business_name}}?\n\nTransform your phone into a POS counter:\n• Fast thermal receipt printing\n• Barcode scanning & low stock alerts\n\nClaim your free trial & partner discount:\n🔗 {{partner_link}}`
+                                },
+                                {
+                                    id: 'pharmacy',
+                                    name: '💊 Pharmacy & Expiry Pitch',
+                                    text: `Avoid batch expiry losses at {{business_name}} with digital GST billing!\n\nHi {{owner_name}},\nSimplify drug batch management and expiry tracking in under 5 minutes.\n\nKey Pharmacy Features:\n1. Automatic batch & 30-day expiry alerts\n2. Rapid GST thermal invoices\n3. One-click GSTR filing reports\n\nGet started with your partner trial:\n🔗 {{partner_link}}`
+                                },
+                                {
+                                    id: 'wholesaler',
+                                    name: '📦 Wholesaler Credit & Ledger',
+                                    text: `Collect outstanding party balances 3x faster at {{business_name}}!\n\nDear {{owner_name}},\nSend automated WhatsApp payment reminders & instant GST e-way bills.\n\nHighlights:\n• Bulk ledger & credit management\n• WhatsApp payment links\n• Multi-warehouse inventory tracking\n\nTry Vyapar App free today:\n🔗 {{partner_link}}`
+                                },
+                                {
+                                    id: 'followup',
+                                    name: '⏳ 24h Follow-up Reminder',
+                                    text: `Hi {{owner_name}},\n\nFollowing up on our conversation regarding {{business_name}}.\n\nDid you get a chance to test the Vyapar billing app demo?\n\nClaim your setup support & partner referral offer here:\n🔗 {{partner_link}}\n\nLet me know if you need assistance!`
+                                }
+                            ],
+
+                            // OCR & Wizard state
+                            isScanning: false,
+                            scanStatusText: '',
+                            wizardModal: false,
+                            wizardStep: 1,
+                            wizardLiveText: '',
+                            wizardData: { name: '', business: '', phone: '', email: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' },
+                            wizardRecognition: null,
+
+                            // Notes state
+                            notesModal: false,
+                            activeLeadForNotes: null,
+
+                            editingLeadModal: false,
+                            editingLead: null,
+                            logs: [],
+                            leads: [],
+
+                            defaultLeads: [
+                                { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', email: 'sudhagani@moksha.com', city: 'Local', niche: 'Services & CAs', status: 'New', notes: 'Interested in thermal printer demo', followUpDate: '2026-06-10' },
+                                { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', email: 'sales@heritage.in', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' },
+                                { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', email: 'info@ncpa.org', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' }
+                            ],
+
+                            messageText: '',
+
+                            init() {
+                                this.loadTemplatesFromStorage();
+                                this.loadLeadsFromStorage();
                             },
-                            {
-                                id: 'pharmacy',
-                                name: '💊 Pharmacy & Expiry Pitch',
-                                text: `Avoid batch expiry losses at {{business_name}} with digital GST billing!\n\nHi {{owner_name}},\nSimplify drug batch management and expiry tracking in under 5 minutes.\n\nKey Pharmacy Features:\n1. Automatic batch & 30-day expiry alerts\n2. Rapid GST thermal invoices\n3. One-click GSTR filing reports\n\nGet started with your partner trial:\n🔗 {{partner_link}}`
+
+
+                            loadTemplatesFromStorage() {
+                                const saved = localStorage.getItem('vyapar_pitch_templates');
+                                if (saved) {
+                                    try {
+                                        const parsed = JSON.parse(saved);
+                                        if (Array.isArray(parsed) && parsed.length > 0) {
+                                            this.templates = parsed;
+                                        }
+                                    } catch (e) { }
+                                }
+                                const activeTpl = this.templates.find(t => t.id === this.selectedTemplateId) || this.templates[0];
+                                if (activeTpl) {
+                                    this.selectedTemplateId = activeTpl.id;
+                                    this.messageText = activeTpl.text;
+                                }
                             },
-                            {
-                                id: 'wholesaler',
-                                name: '📦 Wholesaler Credit & Ledger',
-                                text: `Collect outstanding party balances 3x faster at {{business_name}}!\n\nDear {{owner_name}},\nSend automated WhatsApp payment reminders & instant GST e-way bills.\n\nHighlights:\n• Bulk ledger & credit management\n• WhatsApp payment links\n• Multi-warehouse inventory tracking\n\nTry Vyapar App free today:\n🔗 {{partner_link}}`
+
+                            saveTemplatesToStorage() {
+                                localStorage.setItem('vyapar_pitch_templates', JSON.stringify(this.templates));
                             },
-                            {
-                                id: 'followup',
-                                name: '⏳ 24h Follow-up Reminder',
-                                text: `Hi {{owner_name}},\n\nFollowing up on our conversation regarding {{business_name}}.\n\nDid you get a chance to test the Vyapar billing app demo?\n\nClaim your setup support & partner referral offer here:\n🔗 {{partner_link}}\n\nLet me know if you need assistance!`
-                            }
-                        ],
 
-                        // OCR & Wizard state
-                        isScanning: false,
-                        scanStatusText: '',
-                        wizardModal: false,
-                        wizardStep: 1,
-                        wizardLiveText: '',
-                        wizardData: { name: '', business: '', phone: '', email: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' },
-                        wizardRecognition: null,
+                            switchTemplate(templateId) {
+                                const tpl = this.templates.find(t => t.id === templateId);
+                                if (tpl) {
+                                    this.selectedTemplateId = tpl.id;
+                                    this.messageText = tpl.text;
+                                    this.logs.push(`[Template Switched]: Loaded script "${tpl.name}"`);
+                                }
+                            },
 
-                        // Notes state
-                        notesModal: false,
-                        activeLeadForNotes: null,
+                            updateActiveTemplateText() {
+                                const tpl = this.templates.find(t => t.id === this.selectedTemplateId);
+                                if (tpl) {
+                                    tpl.text = this.messageText;
+                                    this.saveTemplatesToStorage();
+                                }
+                            },
 
-                        editingLeadModal: false,
-                        editingLead: null,
-                        logs: [],
-                        leads: [],
+                            openSaveTemplateModal() {
+                                this.newTemplateName = '';
+                                this.saveTemplateModal = true;
+                            },
 
-                        defaultLeads: [
-                            { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', email: 'sudhagani@moksha.com', city: 'Local', niche: 'Services & CAs', status: 'New', notes: 'Interested in thermal printer demo', followUpDate: '2026-06-10' },
-                            { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', email: 'sales@heritage.in', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' },
-                            { id: 3, name: 'Team', business: 'NCPA', phone: '+91 88795 43737', email: 'info@ncpa.org', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' }
-                        ],
-
-                        messageText: '',
-
-                        init() {
-                            this.loadTemplatesFromStorage();
-                            this.loadLeadsFromStorage();
-                        },
-
-
-                        loadTemplatesFromStorage() {
-                            const saved = localStorage.getItem('vyapar_pitch_templates');
-                            if (saved) {
-                                try {
-                                    const parsed = JSON.parse(saved);
-                                    if (Array.isArray(parsed) && parsed.length > 0) {
-                                        this.templates = parsed;
-                                    }
-                                } catch (e) { }
-                            }
-                            const activeTpl = this.templates.find(t => t.id === this.selectedTemplateId) || this.templates[0];
-                            if (activeTpl) {
-                                this.selectedTemplateId = activeTpl.id;
-                                this.messageText = activeTpl.text;
-                            }
-                        },
-
-                        saveTemplatesToStorage() {
-                            localStorage.setItem('vyapar_pitch_templates', JSON.stringify(this.templates));
-                        },
-
-                        switchTemplate(templateId) {
-                            const tpl = this.templates.find(t => t.id === templateId);
-                            if (tpl) {
-                                this.selectedTemplateId = tpl.id;
-                                this.messageText = tpl.text;
-                                this.logs.push(`[Template Switched]: Loaded script "${tpl.name}"`);
-                            }
-                        },
-
-                        updateActiveTemplateText() {
-                            const tpl = this.templates.find(t => t.id === this.selectedTemplateId);
-                            if (tpl) {
-                                tpl.text = this.messageText;
-                                this.saveTemplatesToStorage();
-                            }
-                        },
-
-                        openSaveTemplateModal() {
-                            this.newTemplateName = '';
-                            this.saveTemplateModal = true;
-                        },
-
-                        confirmSaveNewTemplate() {
-                            if (!this.newTemplateName.trim()) {
-                                alert('Please enter a name for your new pitch script template.');
-                                return;
-                            }
-                            const newId = 'tpl_' + Date.now();
-                            const newTpl = {
-                                id: newId,
-                                name: '📜 ' + this.newTemplateName.trim(),
-                                text: this.messageText
-                            };
-
-                            this.templates.push(newTpl);
-                            this.selectedTemplateId = newId;
-                            this.saveTemplatesToStorage();
-                            this.saveTemplateModal = false;
-                            this.logs.push(`[Template Saved]: Created new template "${newTpl.name}"`);
-                        },
-
-                        deleteCurrentTemplate() {
-                            if (this.templates.length <= 1) {
-                                alert('You must keep at least one template script in the studio.');
-                                return;
-                            }
-                            const currentTpl = this.templates.find(t => t.id === this.selectedTemplateId);
-                            if (confirm(`Are you sure you want to delete template "${currentTpl.name}"?`)) {
-                                this.templates = this.templates.filter(t => t.id !== this.selectedTemplateId);
-                                this.selectedTemplateId = this.templates[0].id;
-                                this.messageText = this.templates[0].text;
-                                this.saveTemplatesToStorage();
-                                this.logs.push(`[Template Deleted]: Removed script "${currentTpl.name}"`);
-                            }
-                        },
-
-                        loadLeadsFromStorage() {
-                            const saved = localStorage.getItem('vyapar_partner_leads');
-                            if (saved) {
-                                try {
-                                    const parsed = JSON.parse(saved);
-                                    this.leads = parsed.map(l => ({
-                                        ...l,
-                                        status: l.status || 'New',
-                                        niche: l.niche || 'Retail & Kirana',
-                                        email: l.email || '',
-                                        notes: l.notes || '',
-                                        followUpDate: l.followUpDate || ''
-                                    }));
-                                } catch (e) { this.leads = [...this.defaultLeads]; }
-                            } else {
-                                this.leads = [...this.defaultLeads];
-                            }
-                        },
-
-                        saveLeadsToStorage() {
-                            localStorage.setItem('vyapar_partner_leads', JSON.stringify(this.leads));
-                        },
-
-                        generateNicheWelcomeBlog(lead) {
-                            const partnerLink = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
-                            let subject = `Welcome to Vyapar, ${lead.name}! Fast-Track ${lead.business}`;
-                            let blogContent = '';
-
-                            if (lead.niche === 'Pharmacies') {
-                                subject = `💊 How ${lead.business} Can Avoid Medicine Expiry Losses with Vyapar`;
-                                blogContent = `Hi ${lead.name},\n\nManaging batches and expiry dates at ${lead.business} shouldn't be stressful.\n\nKey Pharmacy Automation Features:\n1. Batch & Expiry Alerts: Get notified 30 days before medicines expire.\n2. Fast Thermal Billing: Print GST invoices with batch details in under 5 seconds.\n3. Automated Stock Reordering: Never run out of fast-selling drugs.\n\nRead our complete Pharmacy Growth Guide & claim your partner trial discount here:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Support`;
-                            } else if (lead.niche === 'Wholesalers') {
-                                subject = `📦 Bulk Invoicing & Credit Ledger Growth Guide for ${lead.business}`;
-                                blogContent = `Dear ${lead.name},\n\nScaling wholesale operations requires rapid GST invoicing and tight credit tracking.\n\nWholesaler Automation Highlights:\n1. Instant E-Invoicing & E-Way Bills directly from your smartphone.\n2. Payment Reminders via WhatsApp to collect outstanding party debts 3x faster.\n3. Multi-warehouse stock tracking across locations.\n\nExplore how top wholesalers scale operations:\n🔗 ${partnerLink}\n\nWarm regards,\nVyapar Partner Team`;
-                            } else if (lead.niche === 'Services & CAs') {
-                                subject = `💼 Modernize Service Invoicing & GST Filing at ${lead.business}`;
-                                blogContent = `Hello ${lead.name},\n\nStreamline client billing and accounting for ${lead.business}.\n\nService & CA Business Benefits:\n1. Professional GST & Non-GST Quotations/Estimates converted to Invoices in 1-click.\n2. GSTR-1, GSTR-3B & CA Reports exported in seconds.\n3. Digital Payment Links attached directly to client invoices.\n\nStart your free trial with partner referral benefits:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Desk`;
-                            } else {
-                                subject = `🛒 5 Ways ${lead.business} Can Cut Counter Bill Queues in Half`;
-                                blogContent = `Dear ${lead.name},\n\nStop losing retail customers to long checkout queues at ${lead.business}.\n\nRetail Automation Checklist:\n1. Smartphone Barcode Scanner: Use your phone camera as a high-speed scanner.\n2. Bluetooth Thermal Receipt Printing: Print bills on the go.\n3. Low Stock Alerts: Automatically track fast-moving items.\n\nClaim your free trial & exclusive partner setup discount:\n🔗 ${partnerLink}\n\nCheers,\nVyapar Partner Team`;
-                            }
-
-                            return { subject, body: blogContent };
-                        },
-
-                        sendWelcomeEmailBlog(lead) {
-                            if (!lead.email) {
-                                const emailInput = prompt(`No email ID found for ${lead.name}. Please enter their email:`);
-                                if (emailInput && emailInput.includes('@')) {
-                                    lead.email = emailInput.trim();
-                                    this.saveLeadsToStorage();
-                                } else {
-                                    alert('Valid email ID is required to send the welcome blog.');
+                            confirmSaveNewTemplate() {
+                                if (!this.newTemplateName.trim()) {
+                                    alert('Please enter a name for your new pitch script template.');
                                     return;
                                 }
-                            }
+                                const newId = 'tpl_' + Date.now();
+                                const newTpl = {
+                                    id: newId,
+                                    name: '📜 ' + this.newTemplateName.trim(),
+                                    text: this.messageText
+                                };
 
-                            const blogData = this.generateNicheWelcomeBlog(lead);
-                            const mailtoUrl = `mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent(blogData.subject)}&body=${encodeURIComponent(blogData.body)}`;
+                                this.templates.push(newTpl);
+                                this.selectedTemplateId = newId;
+                                this.saveTemplatesToStorage();
+                                this.saveTemplateModal = false;
+                                this.logs.push(`[Template Saved]: Created new template "${newTpl.name}"`);
+                            },
 
-                            if (lead.status === 'New') {
-                                lead.status = 'Contacted';
-                                this.saveLeadsToStorage();
-                            }
-
-                            this.logs.push(`[Email Dispatched]: Welcome blog sent to ${lead.email}`);
-                            window.location.href = mailtoUrl;
-                        },
-
-                        exportToCSV() {
-                            if (this.leads.length === 0) {
-                                alert('No leads available to export.');
-                                return;
-                            }
-
-                            const headers = ['ID', 'Name', 'Business', 'Phone', 'Email', 'City', 'Niche', 'Status', 'Notes', 'FollowUpDate'];
-                            const rows = this.leads.map(lead => [
-                                `"${lead.id}"`,
-                                `"${(lead.name || '').replace(/"/g, '""')}"`,
-                                `"${(lead.business || '').replace(/"/g, '""')}"`,
-                                `"${(lead.phone || '').replace(/"/g, '""')}"`,
-                                `"${(lead.email || '').replace(/"/g, '""')}"`,
-                                `"${(lead.city || '').replace(/"/g, '""')}"`,
-                                `"${(lead.niche || '').replace(/"/g, '""')}"`,
-                                `"${(lead.status || '').replace(/"/g, '""')}"`,
-                                `"${(lead.notes || '').replace(/"/g, '""')}"`,
-                                `"${(lead.followUpDate || '').replace(/"/g, '""')}"`
-                            ]);
-
-                            const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-
-                            const link = document.createElement('a');
-                            link.setAttribute('href', url);
-                            link.setAttribute('download', `ClientHub_Leads_Export_${new Date().toISOString().slice(0, 10)}.csv`);
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-
-                            this.logs.push(`[CSV Export]: Exported ${this.leads.length} leads successfully.`);
-                        },
-
-                        parseCSVText(text) {
-                            const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-                            if (lines.length < 2) return [];
-
-                            const parseLine = (line) => {
-                                const result = [];
-                                let cur = '';
-                                let inQuotes = false;
-                                for (let i = 0; i < line.length; i++) {
-                                    const c = line[i];
-                                    if (c === '"') {
-                                        if (inQuotes && line[i + 1] === '"') {
-                                            cur += '"';
-                                            i++;
-                                        } else {
-                                            inQuotes = !inQuotes;
-                                        }
-                                    } else if (c === ',' && !inQuotes) {
-                                        result.push(cur.trim());
-                                        cur = '';
-                                    } else {
-                                        cur += c;
-                                    }
+                            deleteCurrentTemplate() {
+                                if (this.templates.length <= 1) {
+                                    alert('You must keep at least one template script in the studio.');
+                                    return;
                                 }
-                                result.push(cur.trim());
-                                return result;
-                            };
+                                const currentTpl = this.templates.find(t => t.id === this.selectedTemplateId);
+                                if (confirm(`Are you sure you want to delete template "${currentTpl.name}"?`)) {
+                                    this.templates = this.templates.filter(t => t.id !== this.selectedTemplateId);
+                                    this.selectedTemplateId = this.templates[0].id;
+                                    this.messageText = this.templates[0].text;
+                                    this.saveTemplatesToStorage();
+                                    this.logs.push(`[Template Deleted]: Removed script "${currentTpl.name}"`);
+                                }
+                            },
 
-                            const rawHeaders = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
-                            const getFieldIndex = (aliases) => rawHeaders.findIndex(h => aliases.includes(h));
-                            const nameIdx = getFieldIndex(['name', 'ownername', 'leadname', 'contactname', 'person']);
-                            const busIdx = getFieldIndex(['business', 'businessname', 'shop', 'shopname', 'company', 'firm']);
-                            const phoneIdx = getFieldIndex(['phone', 'mobile', 'phonenumber', 'mobilenumber', 'contact', 'tel']);
-                            const emailIdx = getFieldIndex(['email', 'emailid', 'emailaddress', 'mail']);
-                            const cityIdx = getFieldIndex(['city', 'location', 'town', 'district', 'place']);
-                            const nicheIdx = getFieldIndex(['niche', 'category', 'segment', 'type', 'industry']);
-                            const statusIdx = getFieldIndex(['status', 'leadstatus', 'stage']);
-                            const notesIdx = getFieldIndex(['notes', 'note', 'remarks', 'followup', 'comments']);
-                            const dateIdx = getFieldIndex(['followupdate', 'targetdate', 'date', 'duedate']);
-
-                            const validNiches = ['Retail & Kirana', 'Pharmacies', 'Wholesalers', 'Services & CAs'];
-                            const validStatuses = ['New', 'Contacted', 'Replied', 'Converted'];
-
-                            const parsedLeads = [];
-                            for (let i = 1; i < lines.length; i++) {
-                                const row = parseLine(lines[i]);
-                                if (row.length === 0 || row.every(val => val === '')) continue;
-
-                                let name = nameIdx !== -1 ? row[nameIdx] : '';
-                                let business = busIdx !== -1 ? row[busIdx] : '';
-                                let phone = phoneIdx !== -1 ? row[phoneIdx] : '';
-                                let email = emailIdx !== -1 ? row[emailIdx] : '';
-                                let city = cityIdx !== -1 ? row[cityIdx] : '';
-                                let nicheRaw = nicheIdx !== -1 ? row[nicheIdx] : '';
-                                let statusRaw = statusIdx !== -1 ? row[statusIdx] : '';
-                                let notes = notesIdx !== -1 ? row[notesIdx] : '';
-                                let followUpDate = dateIdx !== -1 ? row[dateIdx] : '';
-
-                                if (!name && !business && !phone) continue;
-
-                                if (phone) {
-                                    let digits = phone.replace(/[^\d+]/g, '');
-                                    if (digits.length === 10) phone = '+91 ' + digits;
-                                    else if (digits.length > 10) phone = '+' + digits.slice(-12);
+                            loadLeadsFromStorage() {
+                                const saved = localStorage.getItem('vyapar_partner_leads');
+                                if (saved) {
+                                    try {
+                                        const parsed = JSON.parse(saved);
+                                        this.leads = parsed.map(l => ({
+                                            ...l,
+                                            status: l.status || 'New',
+                                            niche: l.niche || 'Retail & Kirana',
+                                            email: l.email || '',
+                                            notes: l.notes || '',
+                                            followUpDate: l.followUpDate || ''
+                                        }));
+                                    } catch (e) { this.leads = [...this.defaultLeads]; }
                                 } else {
-                                    phone = '+91 98765 43210';
+                                    this.leads = [...this.defaultLeads];
+                                }
+                            },
+
+                            saveLeadsToStorage() {
+                                localStorage.setItem('vyapar_partner_leads', JSON.stringify(this.leads));
+                            },
+
+                            generateNicheWelcomeBlog(lead) {
+                                const partnerLink = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
+                                let subject = `Welcome to Vyapar, ${lead.name}! Fast-Track ${lead.business}`;
+                                let blogContent = '';
+
+                                if (lead.niche === 'Pharmacies') {
+                                    subject = `💊 How ${lead.business} Can Avoid Medicine Expiry Losses with Vyapar`;
+                                    blogContent = `Hi ${lead.name},\n\nManaging batches and expiry dates at ${lead.business} shouldn't be stressful.\n\nKey Pharmacy Automation Features:\n1. Batch & Expiry Alerts: Get notified 30 days before medicines expire.\n2. Fast Thermal Billing: Print GST invoices with batch details in under 5 seconds.\n3. Automated Stock Reordering: Never run out of fast-selling drugs.\n\nRead our complete Pharmacy Growth Guide & claim your partner trial discount here:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Support`;
+                                } else if (lead.niche === 'Wholesalers') {
+                                    subject = `📦 Bulk Invoicing & Credit Ledger Growth Guide for ${lead.business}`;
+                                    blogContent = `Dear ${lead.name},\n\nScaling wholesale operations requires rapid GST invoicing and tight credit tracking.\n\nWholesaler Automation Highlights:\n1. Instant E-Invoicing & E-Way Bills directly from your smartphone.\n2. Payment Reminders via WhatsApp to collect outstanding party debts 3x faster.\n3. Multi-warehouse stock tracking across locations.\n\nExplore how top wholesalers scale operations:\n🔗 ${partnerLink}\n\nWarm regards,\nVyapar Partner Team`;
+                                } else if (lead.niche === 'Services & CAs') {
+                                    subject = `💼 Modernize Service Invoicing & GST Filing at ${lead.business}`;
+                                    blogContent = `Hello ${lead.name},\n\nStreamline client billing and accounting for ${lead.business}.\n\nService & CA Business Benefits:\n1. Professional GST & Non-GST Quotations/Estimates converted to Invoices in 1-click.\n2. GSTR-1, GSTR-3B & CA Reports exported in seconds.\n3. Digital Payment Links attached directly to client invoices.\n\nStart your free trial with partner referral benefits:\n🔗 ${partnerLink}\n\nBest regards,\nVyapar Partner Desk`;
+                                } else {
+                                    subject = `🛒 5 Ways ${lead.business} Can Cut Counter Bill Queues in Half`;
+                                    blogContent = `Dear ${lead.name},\n\nStop losing retail customers to long checkout queues at ${lead.business}.\n\nRetail Automation Checklist:\n1. Smartphone Barcode Scanner: Use your phone camera as a high-speed scanner.\n2. Bluetooth Thermal Receipt Printing: Print bills on the go.\n3. Low Stock Alerts: Automatically track fast-moving items.\n\nClaim your free trial & exclusive partner setup discount:\n🔗 ${partnerLink}\n\nCheers,\nVyapar Partner Team`;
                                 }
 
-                                let niche = 'Retail & Kirana';
-                                const matchedNiche = validNiches.find(n => n.toLowerCase() === nicheRaw.toLowerCase());
-                                if (matchedNiche) {
-                                    niche = matchedNiche;
-                                } else if (/pharm|chemist|medical/i.test(nicheRaw)) {
-                                    niche = 'Pharmacies';
-                                } else if (/wholesale|distribut/i.test(nicheRaw)) {
-                                    niche = 'Wholesalers';
-                                } else if (/service|ca|consult|travel|tour|hotel/i.test(nicheRaw)) {
-                                    niche = 'Services & CAs';
-                                }
+                                return { subject, body: blogContent };
+                            },
 
-                                let status = 'New';
-                                const matchedStatus = validStatuses.find(s => s.toLowerCase() === statusRaw.toLowerCase());
-                                if (matchedStatus) status = matchedStatus;
-
-                                parsedLeads.push({
-                                    name: name || 'CSV Lead',
-                                    business: business || 'Local Business',
-                                    phone: phone,
-                                    email: email || '',
-                                    city: city || 'Local',
-                                    niche: niche,
-                                    status: status,
-                                    notes: notes || '',
-                                    followUpDate: followUpDate || ''
-                                });
-                            }
-                            return parsedLeads;
-                        },
-
-                        importFromCSV(event) {
-                            const file = event.target.files[0];
-                            if (!file) return;
-
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                try {
-                                    const csvText = e.target.result;
-                                    const newEntries = this.parseCSVText(csvText);
-
-                                    if (newEntries.length === 0) {
-                                        alert('⚠️ No valid lead records found in the selected CSV file.');
-                                        event.target.value = '';
+                            sendWelcomeEmailBlog(lead) {
+                                if (!lead.email) {
+                                    const emailInput = prompt(`No email ID found for ${lead.name}. Please enter their email:`);
+                                    if (emailInput && emailInput.includes('@')) {
+                                        lead.email = emailInput.trim();
+                                        this.saveLeadsToStorage();
+                                    } else {
+                                        alert('Valid email ID is required to send the welcome blog.');
                                         return;
                                     }
+                                }
 
-                                    let maxId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) : 0;
-                                    const importedLeads = newEntries.map(entry => {
-                                        maxId++;
-                                        return { id: maxId, ...entry };
-                                    });
+                                const blogData = this.generateNicheWelcomeBlog(lead);
+                                const mailtoUrl = `mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent(blogData.subject)}&body=${encodeURIComponent(blogData.body)}`;
 
-                                    this.leads = [...importedLeads, ...this.leads];
+                                if (lead.status === 'New') {
+                                    lead.status = 'Contacted';
                                     this.saveLeadsToStorage();
-
-                                    this.selectedNiche = 'all';
-                                    this.selectedStatus = 'all';
-                                    this.searchQuery = '';
-
-                                    this.logs.push(`[CSV Import]: Successfully imported ${importedLeads.length} leads.`);
-                                    alert(`✅ CSV Import Successful!\n\nImported ${importedLeads.length} lead(s) into your Leads CRM.`);
-                                } catch (err) {
-                                    alert('Error reading CSV file: ' + err.message);
-                                }
-                                event.target.value = '';
-                            };
-                            reader.onerror = () => {
-                                alert('Failed to read the file.');
-                                event.target.value = '';
-                            };
-                            reader.readAsText(file);
-                        },
-
-                        openLeadNotes(lead) {
-                            this.activeLeadForNotes = JSON.parse(JSON.stringify(lead));
-                            this.notesModal = true;
-                        },
-
-                        saveLeadNotes() {
-                            if (!this.activeLeadForNotes) return;
-                            const index = this.leads.findIndex(l => l.id === this.activeLeadForNotes.id);
-                            if (index !== -1) {
-                                this.leads[index].notes = this.activeLeadForNotes.notes;
-                                this.leads[index].followUpDate = this.activeLeadForNotes.followUpDate;
-                                this.saveLeadsToStorage();
-                                this.logs.push(`[Notes]: Updated follow-up note for #${this.activeLeadForNotes.id}`);
-                            }
-                            this.notesModal = false;
-                            this.activeLeadForNotes = null;
-                        },
-
-                        startVoiceWizard() {
-                            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                            if (!SpeechRecognition) {
-                                alert('Voice recognition not supported on this browser.');
-                                return;
-                            }
-                            this.wizardStep = 1;
-                            this.wizardData = { name: '', business: '', phone: '', email: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' };
-                            this.wizardLiveText = '';
-                            this.wizardModal = true;
-                            this.initWizardListener();
-                        },
-
-                        initWizardListener() {
-                            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                            this.wizardRecognition = new SpeechRecognition();
-                            this.wizardRecognition.continuous = true;
-                            this.wizardRecognition.interimResults = true;
-                            this.wizardRecognition.lang = 'en-IN';
-
-                            this.wizardRecognition.onresult = (event) => {
-                                let t = '';
-                                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                                    t += event.results[i][0].transcript;
-                                }
-                                this.wizardLiveText = t;
-                            };
-
-                            try { this.wizardRecognition.start(); } catch (e) { }
-                        },
-
-                        get wizardPromptTitle() {
-                            if (this.wizardStep === 1) return "Step 1: Say Owner's Name";
-                            if (this.wizardStep === 2) return "Step 2: Say Business / Shop Name";
-                            if (this.wizardStep === 3) return "Step 3: Say Phone Number";
-                            return "Step 4: Say City & Niche";
-                        },
-
-                        get wizardPromptSubtitle() {
-                            if (this.wizardStep === 1) return "Example: 'Pramod Singh'";
-                            if (this.wizardStep === 2) return "Example: 'Buddha Tours and Travels'";
-                            if (this.wizardStep === 3) return "Example: '07309032800'";
-                            return "Example: 'Varanasi, Services'";
-                        },
-
-                        nextWizardStep() {
-                            if (this.wizardRecognition) { try { this.wizardRecognition.stop(); } catch (e) { } }
-                            const text = this.wizardLiveText.trim();
-
-                            if (this.wizardStep === 1) {
-                                this.wizardData.name = text || 'Voice Lead';
-                                this.wizardStep = 2;
-                                this.wizardLiveText = '';
-                                this.initWizardListener();
-                            } else if (this.wizardStep === 2) {
-                                this.wizardData.business = text || 'Local Business';
-                                this.wizardStep = 3;
-                                this.wizardLiveText = '';
-                                this.initWizardListener();
-                            } else if (this.wizardStep === 3) {
-                                const phoneMatch = text.match(/(\+?\d{10,12}|\d{5}\s?\d{5})/);
-                                this.wizardData.phone = phoneMatch ? phoneMatch[0] : (text || '+91 98765 43210');
-                                this.wizardStep = 4;
-                                this.wizardLiveText = '';
-                                this.initWizardListener();
-                            } else {
-                                this.wizardData.city = text.split(',')[0] || 'Varanasi';
-                                let raw = text.toLowerCase();
-                                if (raw.includes('pharm')) this.wizardData.niche = 'Pharmacies';
-                                else if (raw.includes('wholesale')) this.wizardData.niche = 'Wholesalers';
-                                else if (raw.includes('service') || raw.includes('tour') || raw.includes('resort') || raw.includes('dmc')) this.wizardData.niche = 'Services & CAs';
-                                else this.wizardData.niche = 'Retail & Kirana';
-
-                                this.saveWizardLead();
-                            }
-                        },
-
-                        cancelWizard() {
-                            if (this.wizardRecognition) { try { this.wizardRecognition.stop(); } catch (e) { } }
-                            this.wizardModal = false;
-                        },
-
-                        saveWizardLead() {
-                            this.wizardModal = false;
-                            const newId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) + 1 : 1;
-                            const newLead = {
-                                id: newId,
-                                name: this.wizardData.name,
-                                business: this.wizardData.business,
-                                phone: this.wizardData.phone,
-                                email: '',
-                                city: this.wizardData.city,
-                                niche: this.wizardData.niche,
-                                status: 'New',
-                                notes: '',
-                                followUpDate: ''
-                            };
-
-                            this.selectedNiche = 'all';
-                            this.selectedStatus = 'all';
-                            this.searchQuery = '';
-                            this.leads.unshift(newLead);
-                            this.saveLeadsToStorage();
-                            this.logs.push(`[Wizard Success]: Added #${newId} ${newLead.name}`);
-                            alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
-                        },
-
-                        handleCardSelect(event) {
-                            const file = event.target.files[0];
-                            if (!file) return;
-
-                            this.rawFile = file;
-                            this.previewImage = URL.createObjectURL(file);
-                            this.showPreviewModal = true;
-                            event.target.value = '';
-                        },
-
-                        async confirmAndScan() {
-                            this.showPreviewModal = false;
-                            const file = this.rawFile;
-                            if (!file) return;
-
-                            await this.scanVisitingCard(file);
-                        },
-
-                        async scanVisitingCard(file) {
-                            if (!file) return;
-
-                            this.isScanning = true;
-                            this.scanStatusText = 'Extracting text from visiting card...';
-
-                            try {
-                                const { data: { text } } = await Tesseract.recognize(file, 'eng', {
-                                    logger: m => { if (m.status === 'recognizing text') this.scanStatusText = `Scanning: ${Math.round(m.progress * 100)}%`; }
-                                });
-
-                                this.logs.push(`[OCR Extracted]: "${text.substring(0, 60)}..."`);
-                                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-
-                                const phoneMatch = text.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
-                                let phone = '+91 98765 43210';
-                                if (phoneMatch) {
-                                    let digits = phoneMatch[0].replace(/[^\d+]/g, '');
-                                    if (digits.length === 10) phone = '+91 ' + digits;
-                                    else if (digits.length > 10) phone = '+' + digits.slice(-12);
                                 }
 
-                                let email = '';
-                                const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
-                                if (emailMatch) email = emailMatch[0].toLowerCase();
+                                this.logs.push(`[Email Dispatched]: Welcome blog sent to ${lead.email}`);
+                                window.location.href = mailtoUrl;
+                            },
 
-                                let business = 'Local Business';
-                                const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
-                                const ignoredDomains = ['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'rediffmail', 'aol'];
+                            exportToCSV() {
+                                if (this.leads.length === 0) {
+                                    alert('No leads available to export.');
+                                    return;
+                                }
 
-                                if (domainMatch && domainMatch[1] && !ignoredDomains.includes(domainMatch[1].toLowerCase())) {
-                                    let cleanBrand = domainMatch[1].replace(/([A-Z])/g, ' $1').trim();
-                                    business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
-                                } else {
-                                    const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc|travel|agency/i.test(l) && !/@/i.test(l));
-                                    if (businessLine) business = businessLine;
-                                    else {
-                                        const validLine = lines.find(l => !/sales team|director|manager|ph|www|@/i.test(l) && l.length > 4 && !/\d/.test(l));
-                                        if (validLine) business = validLine;
+                                const headers = ['ID', 'Name', 'Business', 'Phone', 'Email', 'City', 'Niche', 'Status', 'Notes', 'FollowUpDate'];
+                                const rows = this.leads.map(lead => [
+                                    `"${lead.id}"`,
+                                    `"${(lead.name || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.business || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.phone || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.email || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.city || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.niche || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.status || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.notes || '').replace(/"/g, '""')}"`,
+                                    `"${(lead.followUpDate || '').replace(/"/g, '""')}"`
+                                ]);
+
+                                const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                const url = URL.createObjectURL(blob);
+
+                                const link = document.createElement('a');
+                                link.setAttribute('href', url);
+                                link.setAttribute('download', `ClientHub_Leads_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+
+                                this.logs.push(`[CSV Export]: Exported ${this.leads.length} leads successfully.`);
+                            },
+
+                            parseCSVText(text) {
+                                const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+                                if (lines.length < 2) return [];
+
+                                const parseLine = (line) => {
+                                    const result = [];
+                                    let cur = '';
+                                    let inQuotes = false;
+                                    for (let i = 0; i < line.length; i++) {
+                                        const c = line[i];
+                                        if (c === '"') {
+                                            if (inQuotes && line[i + 1] === '"') {
+                                                cur += '"';
+                                                i++;
+                                            } else {
+                                                inQuotes = !inQuotes;
+                                            }
+                                        } else if (c === ',' && !inQuotes) {
+                                            result.push(cur.trim());
+                                            cur = '';
+                                        } else {
+                                            cur += c;
+                                        }
                                     }
+                                    result.push(cur.trim());
+                                    return result;
+                                };
+
+                                const rawHeaders = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                                const getFieldIndex = (aliases) => rawHeaders.findIndex(h => aliases.includes(h));
+                                const nameIdx = getFieldIndex(['name', 'ownername', 'leadname', 'contactname', 'person']);
+                                const busIdx = getFieldIndex(['business', 'businessname', 'shop', 'shopname', 'company', 'firm']);
+                                const phoneIdx = getFieldIndex(['phone', 'mobile', 'phonenumber', 'mobilenumber', 'contact', 'tel']);
+                                const emailIdx = getFieldIndex(['email', 'emailid', 'emailaddress', 'mail']);
+                                const cityIdx = getFieldIndex(['city', 'location', 'town', 'district', 'place']);
+                                const nicheIdx = getFieldIndex(['niche', 'category', 'segment', 'type', 'industry']);
+                                const statusIdx = getFieldIndex(['status', 'leadstatus', 'stage']);
+                                const notesIdx = getFieldIndex(['notes', 'note', 'remarks', 'followup', 'comments']);
+                                const dateIdx = getFieldIndex(['followupdate', 'targetdate', 'date', 'duedate']);
+
+                                const validNiches = ['Retail & Kirana', 'Pharmacies', 'Wholesalers', 'Services & CAs'];
+                                const validStatuses = ['New', 'Contacted', 'Replied', 'Converted'];
+
+                                const parsedLeads = [];
+                                for (let i = 1; i < lines.length; i++) {
+                                    const row = parseLine(lines[i]);
+                                    if (row.length === 0 || row.every(val => val === '')) continue;
+
+                                    let name = nameIdx !== -1 ? row[nameIdx] : '';
+                                    let business = busIdx !== -1 ? row[busIdx] : '';
+                                    let phone = phoneIdx !== -1 ? row[phoneIdx] : '';
+                                    let email = emailIdx !== -1 ? row[emailIdx] : '';
+                                    let city = cityIdx !== -1 ? row[cityIdx] : '';
+                                    let nicheRaw = nicheIdx !== -1 ? row[nicheIdx] : '';
+                                    let statusRaw = statusIdx !== -1 ? row[statusIdx] : '';
+                                    let notes = notesIdx !== -1 ? row[notesIdx] : '';
+                                    let followUpDate = dateIdx !== -1 ? row[dateIdx] : '';
+
+                                    if (!name && !business && !phone) continue;
+
+                                    if (phone) {
+                                        let digits = phone.replace(/[^\d+]/g, '');
+                                        if (digits.length === 10) phone = '+91 ' + digits;
+                                        else if (digits.length > 10) phone = '+' + digits.slice(-12);
+                                    } else {
+                                        phone = '+91 98765 43210';
+                                    }
+
+                                    let niche = 'Retail & Kirana';
+                                    const matchedNiche = validNiches.find(n => n.toLowerCase() === nicheRaw.toLowerCase());
+                                    if (matchedNiche) {
+                                        niche = matchedNiche;
+                                    } else if (/pharm|chemist|medical/i.test(nicheRaw)) {
+                                        niche = 'Pharmacies';
+                                    } else if (/wholesale|distribut/i.test(nicheRaw)) {
+                                        niche = 'Wholesalers';
+                                    } else if (/service|ca|consult|travel|tour|hotel/i.test(nicheRaw)) {
+                                        niche = 'Services & CAs';
+                                    }
+
+                                    let status = 'New';
+                                    const matchedStatus = validStatuses.find(s => s.toLowerCase() === statusRaw.toLowerCase());
+                                    if (matchedStatus) status = matchedStatus;
+
+                                    parsedLeads.push({
+                                        name: name || 'CSV Lead',
+                                        business: business || 'Local Business',
+                                        phone: phone,
+                                        email: email || '',
+                                        city: city || 'Local',
+                                        niche: niche,
+                                        status: status,
+                                        notes: notes || '',
+                                        followUpDate: followUpDate || ''
+                                    });
                                 }
+                                return parsedLeads;
+                            },
 
-                                business = business.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '').trim();
-                                if (!business || business.length < 2) business = 'Local Business';
+                            importFromCSV(event) {
+                                const file = event.target.files[0];
+                                if (!file) return;
 
-                                let name = 'Card Lead';
-                                const nameLine = lines.find(l => !/sales team|director|manager|ph|www|@|p\.o\.|district/i.test(l) && l.length > 3 && !/\d/.test(l));
-                                if (nameLine) name = nameLine;
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    try {
+                                        const csvText = e.target.result;
+                                        const newEntries = this.parseCSVText(csvText);
 
-                                let city = 'Local';
-                                if (/munnar/i.test(text)) city = 'Munnar';
-                                else if (/dubai/i.test(text)) city = 'Dubai';
-                                else if (/mumbai/i.test(text)) city = 'Mumbai';
-                                else if (/delhi/i.test(text)) city = 'Delhi';
-                                else if (/pune/i.test(text)) city = 'Pune';
-                                else if (/varanasi/i.test(text)) city = 'Varanasi';
-                                else if (/india/i.test(text)) city = 'India Operations';
+                                        if (newEntries.length === 0) {
+                                            alert('⚠️ No valid lead records found in the selected CSV file.');
+                                            event.target.value = '';
+                                            return;
+                                        }
 
-                                let niche = 'Retail & Kirana';
-                                if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(text)) {
-                                    niche = 'Services & CAs';
-                                } else if (/pharm|chemist|medical/i.test(text)) {
-                                    niche = 'Pharmacies';
-                                } else if (/wholesale|distributor|agency/i.test(text)) {
-                                    niche = 'Wholesalers';
+                                        let maxId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) : 0;
+                                        const importedLeads = newEntries.map(entry => {
+                                            maxId++;
+                                            return { id: maxId, ...entry };
+                                        });
+
+                                        this.leads = [...importedLeads, ...this.leads];
+                                        this.saveLeadsToStorage();
+
+                                        this.selectedNiche = 'all';
+                                        this.selectedStatus = 'all';
+                                        this.searchQuery = '';
+
+                                        this.logs.push(`[CSV Import]: Successfully imported ${importedLeads.length} leads.`);
+                                        alert(`✅ CSV Import Successful!\n\nImported ${importedLeads.length} lead(s) into your Leads CRM.`);
+                                    } catch (err) {
+                                        alert('Error reading CSV file: ' + err.message);
+                                    }
+                                    event.target.value = '';
+                                };
+                                reader.onerror = () => {
+                                    alert('Failed to read the file.');
+                                    event.target.value = '';
+                                };
+                                reader.readAsText(file);
+                            },
+
+                            openLeadNotes(lead) {
+                                this.activeLeadForNotes = JSON.parse(JSON.stringify(lead));
+                                this.notesModal = true;
+                            },
+
+                            saveLeadNotes() {
+                                if (!this.activeLeadForNotes) return;
+                                const index = this.leads.findIndex(l => l.id === this.activeLeadForNotes.id);
+                                if (index !== -1) {
+                                    this.leads[index].notes = this.activeLeadForNotes.notes;
+                                    this.leads[index].followUpDate = this.activeLeadForNotes.followUpDate;
+                                    this.saveLeadsToStorage();
+                                    this.logs.push(`[Notes]: Updated follow-up note for #${this.activeLeadForNotes.id}`);
                                 }
+                                this.notesModal = false;
+                                this.activeLeadForNotes = null;
+                            },
 
+                            startVoiceWizard() {
+                                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                                if (!SpeechRecognition) {
+                                    alert('Voice recognition not supported on this browser.');
+                                    return;
+                                }
+                                this.wizardStep = 1;
+                                this.wizardData = { name: '', business: '', phone: '', email: '', city: '', niche: 'Retail & Kirana', notes: '', followUpDate: '' };
+                                this.wizardLiveText = '';
+                                this.wizardModal = true;
+                                this.initWizardListener();
+                            },
+
+                            initWizardListener() {
+                                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                                this.wizardRecognition = new SpeechRecognition();
+                                this.wizardRecognition.continuous = true;
+                                this.wizardRecognition.interimResults = true;
+                                this.wizardRecognition.lang = 'en-IN';
+
+                                this.wizardRecognition.onresult = (event) => {
+                                    let t = '';
+                                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                                        t += event.results[i][0].transcript;
+                                    }
+                                    this.wizardLiveText = t;
+                                };
+
+                                try { this.wizardRecognition.start(); } catch (e) { }
+                            },
+
+                            get wizardPromptTitle() {
+                                if (this.wizardStep === 1) return "Step 1: Say Owner's Name";
+                                if (this.wizardStep === 2) return "Step 2: Say Business / Shop Name";
+                                if (this.wizardStep === 3) return "Step 3: Say Phone Number";
+                                return "Step 4: Say City & Niche";
+                            },
+
+                            get wizardPromptSubtitle() {
+                                if (this.wizardStep === 1) return "Example: 'Pramod Singh'";
+                                if (this.wizardStep === 2) return "Example: 'Buddha Tours and Travels'";
+                                if (this.wizardStep === 3) return "Example: '07309032800'";
+                                return "Example: 'Varanasi, Services'";
+                            },
+
+                            nextWizardStep() {
+                                if (this.wizardRecognition) { try { this.wizardRecognition.stop(); } catch (e) { } }
+                                const text = this.wizardLiveText.trim();
+
+                                if (this.wizardStep === 1) {
+                                    this.wizardData.name = text || 'Voice Lead';
+                                    this.wizardStep = 2;
+                                    this.wizardLiveText = '';
+                                    this.initWizardListener();
+                                } else if (this.wizardStep === 2) {
+                                    this.wizardData.business = text || 'Local Business';
+                                    this.wizardStep = 3;
+                                    this.wizardLiveText = '';
+                                    this.initWizardListener();
+                                } else if (this.wizardStep === 3) {
+                                    const phoneMatch = text.match(/(\+?\d{10,12}|\d{5}\s?\d{5})/);
+                                    this.wizardData.phone = phoneMatch ? phoneMatch[0] : (text || '+91 98765 43210');
+                                    this.wizardStep = 4;
+                                    this.wizardLiveText = '';
+                                    this.initWizardListener();
+                                } else {
+                                    this.wizardData.city = text.split(',')[0] || 'Varanasi';
+                                    let raw = text.toLowerCase();
+                                    if (raw.includes('pharm')) this.wizardData.niche = 'Pharmacies';
+                                    else if (raw.includes('wholesale')) this.wizardData.niche = 'Wholesalers';
+                                    else if (raw.includes('service') || raw.includes('tour') || raw.includes('resort') || raw.includes('dmc')) this.wizardData.niche = 'Services & CAs';
+                                    else this.wizardData.niche = 'Retail & Kirana';
+
+                                    this.saveWizardLead();
+                                }
+                            },
+
+                            cancelWizard() {
+                                if (this.wizardRecognition) { try { this.wizardRecognition.stop(); } catch (e) { } }
+                                this.wizardModal = false;
+                            },
+
+                            saveWizardLead() {
+                                this.wizardModal = false;
                                 const newId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) + 1 : 1;
                                 const newLead = {
                                     id: newId,
-                                    name: name,
-                                    business: business,
-                                    phone: phone,
-                                    email: email,
-                                    city: city,
-                                    niche: niche,
+                                    name: this.wizardData.name,
+                                    business: this.wizardData.business,
+                                    phone: this.wizardData.phone,
+                                    email: '',
+                                    city: this.wizardData.city,
+                                    niche: this.wizardData.niche,
                                     status: 'New',
                                     notes: '',
                                     followUpDate: ''
@@ -1346,177 +1343,288 @@
                                 this.searchQuery = '';
                                 this.leads.unshift(newLead);
                                 this.saveLeadsToStorage();
+                                this.logs.push(`[Wizard Success]: Added #${newId} ${newLead.name}`);
+                                alert(`✅ Lead Captured Successfully via Voice Wizard!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}`);
+                            },
 
-                                this.isScanning = false;
-                                alert(`✅ Visiting Card Scanned Successfully!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nEmail: ${newLead.email || 'None'}\nNiche: ${newLead.niche}`);
-                            } catch (err) {
-                                this.isScanning = false;
-                                alert('Error scanning visiting card: ' + err.message);
+                            handleCardSelect(event) {
+                                const file = event.target.files[0];
+                                if (!file) return;
+
+                                this.rawFile = file;
+                                this.previewImage = URL.createObjectURL(file);
+                                this.showPreviewModal = true;
+                                event.target.value = '';
+                            },
+
+                            async confirmAndScan() {
+                                this.showPreviewModal = false;
+                                const file = this.rawFile;
+                                if (!file) return;
+
+                                await this.scanVisitingCard(file);
+                            },
+
+                            async scanVisitingCard(file) {
+                                if (!file) return;
+
+                                this.isScanning = true;
+                                this.scanStatusText = 'Extracting text from visiting card...';
+
+                                try {
+                                    const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+                                        logger: m => { if (m.status === 'recognizing text') this.scanStatusText = `Scanning: ${Math.round(m.progress * 100)}%`; }
+                                    });
+
+                                    this.logs.push(`[OCR Extracted]: "${text.substring(0, 60)}..."`);
+                                    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+
+                                    const phoneMatch = text.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
+                                    let phone = '+91 98765 43210';
+                                    if (phoneMatch) {
+                                        let digits = phoneMatch[0].replace(/[^\d+]/g, '');
+                                        if (digits.length === 10) phone = '+91 ' + digits;
+                                        else if (digits.length > 10) phone = '+' + digits.slice(-12);
+                                    }
+
+                                    let email = '';
+                                    const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+                                    if (emailMatch) email = emailMatch[0].toLowerCase();
+
+                                    let business = 'Local Business';
+                                    const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
+                                    const ignoredDomains = ['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'rediffmail', 'aol'];
+
+                                    if (domainMatch && domainMatch[1] && !ignoredDomains.includes(domainMatch[1].toLowerCase())) {
+                                        let cleanBrand = domainMatch[1].replace(/([A-Z])/g, ' $1').trim();
+                                        business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
+                                    } else {
+                                        const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc|travel|agency/i.test(l) && !/@/i.test(l));
+                                        if (businessLine) business = businessLine;
+                                        else {
+                                            const validLine = lines.find(l => !/sales team|director|manager|ph|www|@/i.test(l) && l.length > 4 && !/\d/.test(l));
+                                            if (validLine) business = validLine;
+                                        }
+                                    }
+
+                                    business = business.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '').trim();
+                                    if (!business || business.length < 2) business = 'Local Business';
+
+                                    let name = 'Card Lead';
+                                    const nameLine = lines.find(l => !/sales team|director|manager|ph|www|@|p\.o\.|district/i.test(l) && l.length > 3 && !/\d/.test(l));
+                                    if (nameLine) name = nameLine;
+
+                                    let city = 'Local';
+                                    if (/munnar/i.test(text)) city = 'Munnar';
+                                    else if (/dubai/i.test(text)) city = 'Dubai';
+                                    else if (/mumbai/i.test(text)) city = 'Mumbai';
+                                    else if (/delhi/i.test(text)) city = 'Delhi';
+                                    else if (/pune/i.test(text)) city = 'Pune';
+                                    else if (/varanasi/i.test(text)) city = 'Varanasi';
+                                    else if (/india/i.test(text)) city = 'India Operations';
+
+                                    let niche = 'Retail & Kirana';
+                                    if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(text)) {
+                                        niche = 'Services & CAs';
+                                    } else if (/pharm|chemist|medical/i.test(text)) {
+                                        niche = 'Pharmacies';
+                                    } else if (/wholesale|distributor|agency/i.test(text)) {
+                                        niche = 'Wholesalers';
+                                    }
+
+                                    const newId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) + 1 : 1;
+                                    const newLead = {
+                                        id: newId,
+                                        name: name,
+                                        business: business,
+                                        phone: phone,
+                                        email: email,
+                                        city: city,
+                                        niche: niche,
+                                        status: 'New',
+                                        notes: '',
+                                        followUpDate: ''
+                                    };
+
+                                    this.selectedNiche = 'all';
+                                    this.selectedStatus = 'all';
+                                    this.searchQuery = '';
+                                    this.leads.unshift(newLead);
+                                    this.saveLeadsToStorage();
+
+                                    this.isScanning = false;
+                                    alert(`✅ Visiting Card Scanned Successfully!\n\nName: ${newLead.name}\nBusiness: ${newLead.business}\nPhone: ${newLead.phone}\nEmail: ${newLead.email || 'None'}\nNiche: ${newLead.niche}`);
+                                } catch (err) {
+                                    this.isScanning = false;
+                                    alert('Error scanning visiting card: ' + err.message);
+                                }
+                            },
+
+                            editLead(lead) {
+                                this.editingLead = JSON.parse(JSON.stringify(lead));
+                                this.editingLeadModal = true;
+                            },
+
+                            saveEditedLead() {
+                                if (!this.editingLead) return;
+                                const index = this.leads.findIndex(l => l.id === this.editingLead.id);
+                                if (index !== -1) {
+                                    this.leads[index] = { ...this.editingLead };
+                                    this.saveLeadsToStorage();
+                                    this.logs.push(`[Edited]: Updated lead #${this.editingLead.id}`);
+                                }
+                                this.editingLeadModal = false;
+                                this.editingLead = null;
+                            },
+
+                            deleteLead(id) {
+                                if (confirm('Are you sure you want to delete this lead?')) {
+                                    this.leads = this.leads.filter(l => l.id !== id);
+                                    this.saveLeadsToStorage();
+                                    this.logs.push(`[Deleted]: Removed lead #${id}`);
+                                }
+                            },
+
+                            get filteredLeads() {
+                                return this.leads.filter(lead => {
+                                    const matchesNiche = this.selectedNiche === 'all' || lead.niche === this.selectedNiche;
+                                    const matchesStatus = this.selectedStatus === 'all' || lead.status === this.selectedStatus;
+                                    const matchesSearch = lead.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                        lead.business.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                        (lead.email && lead.email.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
+                                        lead.city.toLowerCase().includes(this.searchQuery.toLowerCase());
+                                    return matchesNiche && matchesStatus && matchesSearch;
+                                });
+                            },
+
+                            get currentQueueLead() {
+                                return this.filteredLeads[this.queueIndex] || null;
+                            },
+
+                            get activePreviewLead() {
+                                return this.currentQueueLead || this.filteredLeads[0] || { name: 'Sample', business: 'Sample Store' };
+                            },
+
+                            get renderedPreviewText() {
+                                let text = this.messageText;
+                                const lead = this.activePreviewLead;
+                                const link = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
+                                return text.replace(/\{\{owner_name\}\}/g, lead.name).replace(/\{\{business_name\}\}/g, lead.business).replace(/\{\{partner_link\}\}/g, link).replace(/\n/g, '<br>');
+                            },
+
+                            formatPhoneNumber(phoneStr) {
+                                let cleaned = (phoneStr || '').replace(/\D/g, '');
+                                if (cleaned.length === 10) cleaned = '91' + cleaned;
+                                return cleaned;
+                            },
+
+                            openSingleWhatsApp(lead) {
+                                const phone = this.formatPhoneNumber(lead.phone);
+                                const link = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
+                                let text = this.messageText.replace(/\{\{owner_name\}\}/g, lead.name).replace(/\{\{business_name\}\}/g, lead.business).replace(/\{\{partner_link\}\}/g, link);
+
+                                if (lead.status === 'New') {
+                                    lead.status = 'Contacted';
+                                    this.saveLeadsToStorage();
+                                }
+
+                                window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+                            },
+
+                            dispatchNextInQueue() {
+                                if (!this.currentQueueLead) return;
+                                const lead = this.currentQueueLead;
+                                this.openSingleWhatsApp(lead);
+                                this.queueIndex++;
                             }
-                        },
-
-                        editLead(lead) {
-                            this.editingLead = JSON.parse(JSON.stringify(lead));
-                            this.editingLeadModal = true;
-                        },
-
-                        saveEditedLead() {
-                            if (!this.editingLead) return;
-                            const index = this.leads.findIndex(l => l.id === this.editingLead.id);
-                            if (index !== -1) {
-                                this.leads[index] = { ...this.editingLead };
-                                this.saveLeadsToStorage();
-                                this.logs.push(`[Edited]: Updated lead #${this.editingLead.id}`);
-                            }
-                            this.editingLeadModal = false;
-                            this.editingLead = null;
-                        },
-
-                        deleteLead(id) {
-                            if (confirm('Are you sure you want to delete this lead?')) {
-                                this.leads = this.leads.filter(l => l.id !== id);
-                                this.saveLeadsToStorage();
-                                this.logs.push(`[Deleted]: Removed lead #${id}`);
-                            }
-                        },
-
-                        get filteredLeads() {
-                            return this.leads.filter(lead => {
-                                const matchesNiche = this.selectedNiche === 'all' || lead.niche === this.selectedNiche;
-                                const matchesStatus = this.selectedStatus === 'all' || lead.status === this.selectedStatus;
-                                const matchesSearch = lead.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                                    lead.business.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                                    (lead.email && lead.email.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
-                                    lead.city.toLowerCase().includes(this.searchQuery.toLowerCase());
-                                return matchesNiche && matchesStatus && matchesSearch;
-                            });
-                        },
-
-                        get currentQueueLead() {
-                            return this.filteredLeads[this.queueIndex] || null;
-                        },
-
-                        get activePreviewLead() {
-                            return this.currentQueueLead || this.filteredLeads[0] || { name: 'Sample', business: 'Sample Store' };
-                        },
-
-                        get renderedPreviewText() {
-                            let text = this.messageText;
-                            const lead = this.activePreviewLead;
-                            const link = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
-                            return text.replace(/\{\{owner_name\}\}/g, lead.name).replace(/\{\{business_name\}\}/g, lead.business).replace(/\{\{partner_link\}\}/g, link).replace(/\n/g, '<br>');
-                        },
-
-                        formatPhoneNumber(phoneStr) {
-                            let cleaned = (phoneStr || '').replace(/\D/g, '');
-                            if (cleaned.length === 10) cleaned = '91' + cleaned;
-                            return cleaned;
-                        },
-
-                        openSingleWhatsApp(lead) {
-                            const phone = this.formatPhoneNumber(lead.phone);
-                            const link = 'https://vyaparapp.in/?referrer_code=' + this.partnerCode;
-                            let text = this.messageText.replace(/\{\{owner_name\}\}/g, lead.name).replace(/\{\{business_name\}\}/g, lead.business).replace(/\{\{partner_link\}\}/g, link);
-
-                            if (lead.status === 'New') {
-                                lead.status = 'Contacted';
-                                this.saveLeadsToStorage();
-                            }
-
-                            window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
-                        },
-
-                        dispatchNextInQueue() {
-                            if (!this.currentQueueLead) return;
-                            const lead = this.currentQueueLead;
-                            this.openSingleWhatsApp(lead);
-                            this.queueIndex++;
                         }
                     }
-                }
-            </script>
-            <!-- Service Worker Registration for PWA Offline Support -->
-            <script>
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        navigator.serviceWorker.register('./sw.js')
-                            .then(reg => console.log('ServiceWorker registered successfully:', reg.scope))
-                            .catch(err => console.log('ServiceWorker registration failed:', err));
-                    });
-                }
-            </script>
+                </script>
+                <!-- Service Worker Registration for PWA Offline Support -->
+                <script>
+                    if ('serviceWorker' in navigator) {
+                        window.addEventListener('load', () => {
+                            navigator.serviceWorker.register('./sw.js')
+                                .then(reg => console.log('ServiceWorker registered successfully:', reg.scope))
+                                .catch(err => console.log('ServiceWorker registration failed:', err));
+                        });
+                    }
+                </script>
 
 
-            <!-- Legal Modal Component -->
-            <div x-show="legalModal" x-cloak
-                class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
-                <div
-                    class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] flex flex-col space-y-4 shadow-2xl">
-                    <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-                        <h3 class="font-bold text-white text-base flex items-center space-x-2">
-                            <i class="fa-solid fa-shield-halved text-brand-400"></i>
-                            <span>ClientHub Privacy Policy & Terms of Service</span>
-                        </h3>
-                        <button @click="legalModal = false" class="text-slate-400 hover:text-white"><i
-                                class="fa-solid fa-xmark text-lg"></i></button>
-                    </div>
+                <!-- Legal Modal Component -->
+                <div x-show="legalModal" x-cloak
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+                    <div
+                        class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] flex flex-col space-y-4 shadow-2xl">
+                        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                            <h3 class="font-bold text-white text-base flex items-center space-x-2">
+                                <i class="fa-solid fa-shield-halved text-brand-400"></i>
+                                <span>ClientHub Privacy Policy & Terms of Service</span>
+                            </h3>
+                            <button @click="legalModal = false" class="text-slate-400 hover:text-white"><i
+                                    class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
 
-                    <div class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2 leading-relaxed">
-                        <div>
-                            <h4 class="font-bold text-white mb-1">1. Privacy Policy & Local Storage</h4>
-                            <p>ClientHub operates on a local-first architecture. All lead CRM records, follow-up
-                                reminder notes,
-                                and pitch templates are stored securely in your browser's local storage
-                                (<code>localStorage</code>). We do not collect, transmit, or store your personal client
-                                data on
-                                external servers.</p>
+                        <div class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2 leading-relaxed">
+                            <div>
+                                <h4 class="font-bold text-white mb-1">1. Privacy Policy & Local Storage</h4>
+                                <p>ClientHub operates on a local-first architecture. All lead CRM records, follow-up
+                                    reminder notes,
+                                    and pitch templates are stored securely in your browser's local storage
+                                    (<code>localStorage</code>). We do not collect, transmit, or store your personal
+                                    client
+                                    data on
+                                    external servers.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">2. Hardware & Permission Disclosures</h4>
+                                <p>ClientHub requests temporary hardware access solely for core productivity features:
+                                    <strong>Microphone</strong> access for the Voice Wizard speech recognition, and
+                                    <strong>Camera</strong> access for Visiting Card OCR scanning. Audio and image
+                                    processing occur
+                                    client-side on your device in real-time.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">3. Terms of Service & Acceptable Use</h4>
+                                <p>By using ClientHub, you agree to use the application responsibly for legitimate sales
+                                    automation,
+                                    CRM management, and customer outreach. You retain 100% ownership of your exported
+                                    CSV
+                                    data.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">4. Intellectual Property & Copyright Notice</h4>
+                                <p>© 2026 ClientHub. All Rights Reserved. The software architecture, source code, UI/UX
+                                    design, and
+                                    master icon (<code>Icon-ClientHub-v1.1.png</code>) are proprietary assets protected
+                                    under
+                                    international copyright laws.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-white mb-1">2. Hardware & Permission Disclosures</h4>
-                            <p>ClientHub requests temporary hardware access solely for core productivity features:
-                                <strong>Microphone</strong> access for the Voice Wizard speech recognition, and
-                                <strong>Camera</strong> access for Visiting Card OCR scanning. Audio and image
-                                processing occur
-                                client-side on your device in real-time.
-                            </p>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-white mb-1">3. Terms of Service & Acceptable Use</h4>
-                            <p>By using ClientHub, you agree to use the application responsibly for legitimate sales
-                                automation,
-                                CRM management, and customer outreach. You retain 100% ownership of your exported CSV
-                                data.</p>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-white mb-1">4. Intellectual Property & Copyright Notice</h4>
-                            <p>© 2026 ClientHub. All Rights Reserved. The software architecture, source code, UI/UX
-                                design, and
-                                master icon (<code>Icon-ClientHub-v1.1.png</code>) are proprietary assets protected
-                                under
-                                international copyright laws.</p>
-                        </div>
-                    </div>
 
-                    <div class="flex justify-end pt-3 border-t border-slate-700">
-                        <button @click="legalModal = false"
-                            class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs shadow">Close
-                            & Return</button>
+                        <div class="flex justify-end pt-3 border-t border-slate-700">
+                            <button @click="legalModal = false"
+                                class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs shadow">Close
+                                & Return</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Footer with Working Trigger -->
-            <footer class="mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-800">
-                <span>ClientHub v5.0 • All Rights Reserved.</span>
-                <span class="mx-2">•</span>
-                <button @click="legalModal = true" class="text-brand-400 hover:underline cursor-pointer">Privacy & Legal
-                    Terms</button>
-            </footer>
+                <!-- Footer with Working Trigger -->
+                <footer class="mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-800">
+                    <span>ClientHub v5.0 • All Rights Reserved.</span>
+                    <span class="mx-2">•</span>
+                    <button @click="legalModal = true" class="text-brand-400 hover:underline cursor-pointer">Privacy &
+                        Legal
+                        Terms</button>
+                </footer>
 
 
-            <a href="./landing.html" class="text-xs text-slate-400 hover:text-slate-200 transition">
-                ← Product Overview
-            </a>
+                <a href="./landing.html" class="text-xs text-slate-400 hover:text-slate-200 transition">
+                    ← Product Overview
+                </a>
 
 
 
