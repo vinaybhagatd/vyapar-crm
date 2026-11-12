@@ -378,6 +378,121 @@
                     </div>
                 </div>
 
+<div x-data="customTemplateManager()" class="max-w-xl mx-auto p-6 bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-2xl mt-6">
+    
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <h2 class="text-xl font-bold flex items-center gap-2">
+                <span>✏️</span> Custom Pitch Templates
+            </h2>
+            <p class="text-xs text-slate-400">Create and save your own reusable WhatsApp outreach messages.</p>
+        </div>
+        <button @click="openEditor()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+            + New Template
+        </button>
+    </div>
+
+    <!-- Template List Cards -->
+    <div class="space-y-3 mb-6">
+        <template x-for="tmpl in templates" :key="tmpl.id">
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold text-sm text-emerald-400" x-text="tmpl.title"></span>
+                    <div class="flex items-center gap-1">
+                        <button @click="editTemplate(tmpl)" class="text-slate-400 hover:text-white p-1 text-xs transition" title="Edit">✏️</button>
+                        <button @click="deleteTemplate(tmpl.id)" class="text-slate-500 hover:text-red-400 p-1 text-xs transition" title="Delete">🗑️</button>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-300 line-clamp-2 font-mono bg-slate-900/60 p-2 rounded-lg border border-slate-800/80" x-text="tmpl.text"></p>
+            </div>
+        </template>
+    </div>
+
+    <!-- Template Editor Modal / Form Drawer -->
+    <div x-show="isEditing" class="bg-slate-950 border border-slate-700 p-4 rounded-xl space-y-3">
+        <h3 class="text-sm font-bold text-white" x-text="form.id ? 'Edit Template' : 'Create New Template'"></h3>
+        
+        <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Template Title</label>
+            <input type="text" x-model="form.title" placeholder="e.g., Aggressive Cold Follow-up" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-medium text-slate-400">Message Body (Tokens: <code class="text-blue-400">{{name}}</code>, <code class="text-blue-400">{{business}}</code>, <code class="text-blue-400">{{niche}}</code>, <code class="text-blue-400">{{link}}</code>)</label>
+            </div>
+            <textarea x-model="form.text" rows="5" placeholder="Hi {{name}}, ..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-sans"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+            <button @click="isEditing = false" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold transition">Cancel</button>
+            <button @click="saveTemplate()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Save Template</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function customTemplateManager() {
+    return {
+        isEditing: false,
+        form: { id: null, title: '', text: '' },
+        
+        // Load default or saved templates from localStorage
+        templates: JSON.parse(localStorage.getItem('clienthub_custom_templates') || JSON.stringify([
+            {
+                id: 1,
+                title: "👋 Quick Event Follow-up",
+                text: "Hi {{name}}, great connecting with you today! Following up from ClientHub regarding {{business}}. Would love to show you how our instant OCR and WhatsApp sales tool works.\n\nCheck it out here: {{link}}"
+            },
+            {
+                id: 2,
+                title: "⚡ 10-Second OCR Demo Pitch",
+                text: "Hi {{name}}! Notice how visiting card management gets messy? We built ClientHub to scan business cards and launch WhatsApp pitches in under 10 seconds for {{niche}} businesses.\n\nTry it free here: {{link}}"
+            }
+        ])),
+
+        openEditor() {
+            this.form = { id: null, title: '', text: '' };
+            this.isEditing = true;
+        },
+
+        editTemplate(tmpl) {
+            this.form = { ...tmpl };
+            this.isEditing = true;
+        },
+
+        saveTemplate() {
+            if (!this.form.title.trim() || !this.form.text.trim()) {
+                alert('Please provide both a title and message body.');
+                return;
+            }
+
+            if (this.form.id) {
+                // Edit existing
+                const index = this.templates.findIndex(t => t.id === this.form.id);
+                if (index !== -1) this.templates[index] = { ...this.form };
+            } else {
+                // Create new
+                this.form.id = Date.now();
+                this.templates.push({ ...this.form });
+            }
+
+            localStorage.setItem('clienthub_custom_templates', JSON.stringify(this.templates));
+            this.isEditing = false;
+        },
+
+        deleteTemplate(id) {
+            if (confirm('Are you sure you want to delete this template?')) {
+                this.templates = this.templates.filter(t => t.id !== id);
+                localStorage.setItem('clienthub_custom_templates', JSON.stringify(this.templates));
+            }
+        }
+    }
+}
+</script>
+
+
                 <!-- Tab 3: Sequential Queue Dispatch -->
                 <div x-show="activeTab === 'broadcast'" x-cloak
                     class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
