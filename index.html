@@ -11,19 +11,23 @@
     <!-- Tailwind CSS CDN -->
     <!-- Copyright (c) 2026 ClientHub. All Rights Reserved. -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@v5/dist/tesseract.min.js'></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Tesseract.js for Visiting Card OCR Scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- Alpine.js for Interactivity -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Tesseract.js for Visiting Card OCR Scanning -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
     <!-- Eruda Mobile Console for Debugging -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -235,7 +239,7 @@
                             class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500">
                     </div>
 
-                    <!-- Leads List with Email Actions & Notes Preview -->
+                    <!-- Leads List -->
                     <div class="max-h-80 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
                         <template x-for="lead in filteredLeads" :key="lead.id">
                             <div
@@ -315,11 +319,11 @@
                                     <select x-model="lead.status" @change="saveLeadsToStorage()"
                                         class="bg-slate-800 border rounded-lg px-2 py-0.5 text-[11px] font-medium focus:outline-none"
                                         :class="{
-                                                'text-amber-400 border-amber-500/30': lead.status === 'New',
-                                                'text-blue-400 border-blue-500/30': lead.status === 'Contacted',
-                                                'text-purple-400 border-purple-500/30': lead.status === 'Replied',
-                                                'text-whatsapp-400 border-whatsapp-500/30': lead.status === 'Converted'
-                                            }">
+                                            'text-amber-400 border-amber-500/30': lead.status === 'New',
+                                            'text-blue-400 border-blue-500/30': lead.status === 'Contacted',
+                                            'text-purple-400 border-purple-500/30': lead.status === 'Replied',
+                                            'text-whatsapp-400 border-whatsapp-500/30': lead.status === 'Converted'
+                                        }">
                                         <option value="New">🟡 New</option>
                                         <option value="Contacted">🔵 Contacted</option>
                                         <option value="Replied">🟣 Replied</option>
@@ -380,351 +384,101 @@
                     </div>
                 </div>
 
-<div x-data="customTemplateManager()" class="max-w-xl mx-auto p-6 bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-2xl mt-6">
-    
-    <div class="flex justify-between items-center mb-4">
-        <div>
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <span>✏️</span> Custom Pitch Templates
-            </h2>
-            <p class="text-xs text-slate-400">Create and save your own reusable WhatsApp outreach messages.</p>
-        </div>
-        <button @click="openEditor()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
-            + New Template
-        </button>
-    </div>
+                <!-- Interactive OCR Fine-Tuning Sandbox Component -->
+                <div x-data="ocrPipelineApp()"
+                    class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-400"></i>
+                        <span>Live OCR Pipeline & Fine-Tuner</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Fine-tune contrast and resolution, preview the processed canvas,
+                        and run Tesseract.js offline.</p>
 
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Upload or Capture Business
+                                Card</label>
+                            <input type="file" accept="image/*" @change="handleImageUpload($event)"
+                                class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-500 cursor-pointer">
+                        </div>
 
-<div x-data="ocrPipelineApp()" class="max-w-2xl mx-auto p-6 bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-xl my-6">
-    <h3 class="text-lg font-bold text-white mb-1">⚡ Live OCR Pipeline & Fine-Tuner</h3>
-    <p class="text-xs text-slate-400 mb-4">Fine-tune contrast and resolution, preview the processed canvas, and run Tesseract.js offline.</p>
+                        <div
+                            class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Contrast Factor: <span
+                                        class="font-mono text-blue-400" x-text="contrast"></span></label>
+                                <input type="range" min="0.8" max="2.5" step="0.1" x-model.number="contrast"
+                                    @input="reprocessCanvas()" class="w-full accent-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Max Width: <span
+                                        class="font-mono text-blue-400" x-text="maxWidth + 'px'"></span></label>
+                                <input type="range" min="600" max="1600" step="100" x-model.number="maxWidth"
+                                    @input="reprocessCanvas()" class="w-full accent-blue-500">
+                            </div>
+                        </div>
 
-    <!-- File Upload / Camera Input -->
-    <div class="mb-4">
-        <label class="block text-xs font-medium text-slate-300 mb-1">Upload or Capture Business Card</label>
-        <input type="file" accept="image/*" @change="handleImageUpload($event)" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-    </div>
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+                            <span class="text-xs font-bold text-emerald-400 block mb-2">Preprocessed Canvas Output (What
+                                Tesseract Sees):</span>
+                            <canvas id="ocrCanvas"
+                                class="max-w-full rounded-lg border border-slate-800 max-h-48 object-contain bg-white"></canvas>
+                        </div>
 
-    <!-- Fine-Tuning Sliders -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
-        <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Contrast Factor: <span class="font-mono text-blue-400" x-text="contrast"></span></label>
-            <input type="range" min="0.8" max="2.5" step="0.1" x-model.number="contrast" @input="reprocessCanvas()" class="w-full accent-blue-500">
-        </div>
-        <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Max Width: <span class="font-mono text-blue-400" x-text="maxWidth + 'px'"></span></label>
-            <input type="range" min="600" max="1600" step="100" x-model.number="maxWidth" @input="reprocessCanvas()" class="w-full accent-blue-500">
-        </div>
-    </div>
+                        <button @click="runOCR()" :disabled="isProcessing"
+                            class="w-full bg-brand-600 hover:bg-brand-500 disabled:bg-slate-700 text-white py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 shadow">
+                            <span x-show="isProcessing">⏳ Processing OCR Locally...</span>
+                            <span x-show="!isProcessing">Run Tesseract.js Recognition 🚀</span>
+                        </button>
 
-    <!-- Live Canvas Pre-processing Preview -->
-    <div class="mb-4 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
-        <span class="text-xs font-bold text-emerald-400 block mb-2">Preprocessed Canvas Output (What Tesseract Sees):</span>
-        <canvas id="ocrCanvas" class="max-w-full rounded-lg border border-slate-800 max-h-64 object-contain"></canvas>
-    </div>
-
-    <!-- Run OCR Button & Status -->
-    <button @click="runOCR()" :disabled="isProcessing" class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2">
-        <span x-show="isProcessing">⏳ Processing OCR Locally...</span>
-        <span x-show="!isProcessing">Run Tesseract.js Recognition 🚀</span>
-    </button>
-
-    <!-- OCR Results Output -->
-    <div x-show="ocrResult" class="mt-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
-        <span class="text-xs font-bold text-emerald-400 block mb-2">Parsed Contact Data:</span>
-        <pre class="text-xs font-mono text-slate-300 whitespace-pre-wrap" x-text="JSON.stringify(ocrResult, null, 2)"></pre>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script>
-function ocrPipelineApp() {
-    return {
-        contrast: 1.5,
-        maxWidth: 1200,
-        rawImageFile: null,
-        isProcessing: false,
-        ocrResult: null,
-
-        handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            this.rawImageFile = file;
-            this.reprocessCanvas();
-        },
-
-        reprocessCanvas() {
-            if (!this.rawImageFile) return;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.getElementById('ocrCanvas');
-                    const ctx = canvas.getContext('2d');
-
-                    // 1. Calculate aspect ratio and apply Max Width constraint
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > this.maxWidth) {
-                        height = Math.round((height * this.maxWidth) / width);
-                        width = this.maxWidth;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    // 2. Draw image onto canvas
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // 3. Extract pixel data for preprocessing
-                    const imgData = ctx.getImageData(0, 0, width, height);
-                    const data = imgData.data;
-                    const factor = this.contrast;
-
-                    // 4. Apply Grayscale and Contrast algorithms
-                    for (let i = 0; i < data.length; i += 4) {
-                        // Standard BT.601 Grayscale luminance
-                        let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-
-                        // Apply contrast factor formula: Factor * (Gray - 128) + 128
-                        let contrasted = factor * (gray - 128) + 128;
-
-                        // Clamp values between 0 and 255
-                        contrastred = Math.max(0, Math.min(255, contrasted));
-
-                        data[i]     = contrasted; // Red
-                        data[i + 1] = contrasted; // Green
-                        data[i + 2] = contrasted; // Blue
-                    }
-
-                    // Put processed pixels back onto canvas
-                    ctx.putImageData(imgData, 0, 0);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(this.rawImageFile);
-        },
-
-        async runOCR() {
-            const canvas = document.getElementById('ocrCanvas');
-            if (!canvas.width || !this.rawImageFile) {
-                alert('Please upload an image first.');
-                return;
-            }
-
-            this.isProcessing = true;
-            try {
-                // Get preprocessed image data URL from the canvas
-                const processedImageUrl = canvas.toDataURL('image/png');
-
-                // Run Tesseract.js offline worker
-                const result = await Tesseract.recognize(
-                    processedImageUrl,
-                    'eng',
-                    { logger: m => console.log(m) }
-                );
-
-                const rawText = result.data.text;
-                
-                // Pass raw text into your global regex parser function
-                this.ocrResult = parseBusinessCardText(rawText);
-
-            } catch (error) {
-                console.error('OCR Error:', error);
-                alert('OCR processing failed. Check console for details.');
-            } finally {
-                this.isProcessing = false;
-            }
-        }
-    }
-}
-</script>
-
-<div x-data="qrCardGenerator()" x-init="initQR()" class="max-w-md mx-auto p-6 bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-2xl mt-6">
-    
-    <div class="flex items-center gap-3 mb-4">
-        <span class="text-2xl">⚡</span>
-        <div>
-            <h2 class="text-xl font-bold text-white">Instant Networking QR</h2>
-            <p class="text-xs text-slate-400">Share your digital card or referral link instantly at events.</p>
-        </div>
-    </div>
-
-    <!-- Input Form Fields -->
-    <div class="space-y-3 mb-6">
-        <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Your Name / Title</label>
-            <input type="text" x-model="form.name" @input="generateQR()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-        </div>
-
-        <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Phone (for WhatsApp link)</label>
-            <input type="text" x-model="form.phone" @input="generateQR()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500">
-        </div>
-
-        <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Target Landing / Pitch Link</label>
-            <input type="text" x-model="form.link" @input="generateQR()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-        </div>
-    </div>
-
-    <!-- Live QR Code Display Box -->
-    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col items-center justify-center space-y-4">
-        <div class="text-center">
-            <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Scan to Connect</span>
-        </div>
-
-        <!-- Render Target Container -->
-        <div id="qrcode-container" class="bg-white p-3 rounded-xl shadow-inner flex items-center justify-center"></div>
-
-        <p class="text-[11px] text-slate-500 text-center max-w-xs">
-            Encodes direct contact details & WhatsApp pitch link for instant offline exchange.
-        </p>
-    </div>
-
-</div>
-
-<script>
-function qrCardGenerator() {
-    return {
-        qrInstance: null,
-        form: {
-            name: 'Vinay Bhagat',
-            phone: '+919876543210',
-            link: 'https://vinaybhagatd.github.io/vyapar-crm/landing.html'
-        },
-
-        initQR() {
-            // Initialize qrcode.js inside the container
-            const container = document.getElementById('qrcode-container');
-            container.innerHTML = ''; // clear existing if any
-            
-            this.qrInstance = new QRCode(container, {
-                text: this.getPayloadString(),
-                width: 180,
-                height: 180,
-                colorDark: "#0f172a", // slate-900
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        },
-
-        getPayloadString() {
-            // Formats data into a neat vCard or clean WhatsApp chat initiation payload
-            const cleanPhone = this.form.phone.replace(/\D/g, '');
-            return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi ${this.form.name}, let's connect! Checked your profile via ClientHub: ${this.form.link}`)}`;
-        },
-
-        generateQR() {
-            if (!this.qrInstance) return;
-            const payload = this.getPayloadString();
-            this.qrInstance.makeCode(payload);
-        }
-    }
-}
-</script>
-
-    <!-- Template List Cards -->
-    <div class="space-y-3 mb-6">
-        <template x-for="tmpl in templates" :key="tmpl.id">
-            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col gap-2">
-                <div class="flex justify-between items-center">
-                    <span class="font-semibold text-sm text-emerald-400" x-text="tmpl.title"></span>
-                    <div class="flex items-center gap-1">
-                        <button @click="editTemplate(tmpl)" class="text-slate-400 hover:text-white p-1 text-xs transition" title="Edit">✏️</button>
-                        <button @click="deleteTemplate(tmpl.id)" class="text-slate-500 hover:text-red-400 p-1 text-xs transition" title="Delete">🗑️</button>
+                        <div x-show="ocrResult" class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-xs font-bold text-emerald-400 block mb-1">Parsed Contact Data:</span>
+                            <pre class="text-[11px] font-mono text-slate-300 whitespace-pre-wrap max-h-32 overflow-y-auto"
+                                x-text="JSON.stringify(ocrResult, null, 2)"></pre>
+                        </div>
                     </div>
                 </div>
-                <p class="text-xs text-slate-300 line-clamp-2 font-mono bg-slate-900/60 p-2 rounded-lg border border-slate-800/80" x-text="tmpl.text"></p>
-            </div>
-        </template>
-    </div>
 
-    <!-- Template Editor Modal / Form Drawer -->
-    <div x-show="isEditing" class="bg-slate-950 border border-slate-700 p-4 rounded-xl space-y-3">
-        <h3 class="text-sm font-bold text-white" x-text="form.id ? 'Edit Template' : 'Create New Template'"></h3>
-        
-        <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Template Title</label>
-            <input type="text" x-model="form.title" placeholder="e.g., Aggressive Cold Follow-up" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-        </div>
+                <!-- Instant Networking QR Component -->
+                <div x-data="qrCardGenerator()" x-init="initQR()"
+                    class="bg-slate-800/90 rounded-2xl border border-slate-700 p-5 flex flex-col space-y-4 shadow-xl">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">⚡</span>
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Instant Networking QR</h2>
+                            <p class="text-[11px] text-slate-400">Share your digital card or referral link instantly at
+                                events.</p>
+                        </div>
+                    </div>
 
-        <div>
-            <div class="flex justify-between items-center mb-1">
-                <label class="text-xs font-medium text-slate-400">Message Body (Tokens: <code class="text-blue-400">{{name}}</code>, <code class="text-blue-400">{{business}}</code>, <code class="text-blue-400">{{niche}}</code>, <code class="text-blue-400">{{link}}</code>)</label>
-            </div>
-            <textarea x-model="form.text" rows="5" placeholder="Hi {{name}}, ..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-sans"></textarea>
-        </div>
+                    <div class="space-y-2.5 text-xs">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Your Name / Title</label>
+                            <input type="text" x-model="form.name" @input="generateQR()"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Phone (for WhatsApp
+                                link)</label>
+                            <input type="text" x-model="form.phone" @input="generateQR()"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Target Landing / Pitch
+                                Link</label>
+                            <input type="text" x-model="form.link" @input="generateQR()"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                        </div>
+                    </div>
 
-        <div class="flex justify-end gap-2 pt-2">
-            <button @click="isEditing = false" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold transition">Cancel</button>
-            <button @click="saveTemplate()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Save Template</button>
-        </div>
-    </div>
-
-</div>
-
-<script>
-function customTemplateManager() {
-    return {
-        isEditing: false,
-        form: { id: null, title: '', text: '' },
-        
-        // Load default or saved templates from localStorage
-        templates: JSON.parse(localStorage.getItem('clienthub_custom_templates') || JSON.stringify([
-            {
-                id: 1,
-                title: "👋 Quick Event Follow-up",
-                text: "Hi {{name}}, great connecting with you today! Following up from ClientHub regarding {{business}}. Would love to show you how our instant OCR and WhatsApp sales tool works.\n\nCheck it out here: {{link}}"
-            },
-            {
-                id: 2,
-                title: "⚡ 10-Second OCR Demo Pitch",
-                text: "Hi {{name}}! Notice how visiting card management gets messy? We built ClientHub to scan business cards and launch WhatsApp pitches in under 10 seconds for {{niche}} businesses.\n\nTry it free here: {{link}}"
-            }
-        ])),
-
-        openEditor() {
-            this.form = { id: null, title: '', text: '' };
-            this.isEditing = true;
-        },
-
-        editTemplate(tmpl) {
-            this.form = { ...tmpl };
-            this.isEditing = true;
-        },
-
-        saveTemplate() {
-            if (!this.form.title.trim() || !this.form.text.trim()) {
-                alert('Please provide both a title and message body.');
-                return;
-            }
-
-            if (this.form.id) {
-                // Edit existing
-                const index = this.templates.findIndex(t => t.id === this.form.id);
-                if (index !== -1) this.templates[index] = { ...this.form };
-            } else {
-                // Create new
-                this.form.id = Date.now();
-                this.templates.push({ ...this.form });
-            }
-
-            localStorage.setItem('clienthub_custom_templates', JSON.stringify(this.templates));
-            this.isEditing = false;
-        },
-
-        deleteTemplate(id) {
-            if (confirm('Are you sure you want to delete this template?')) {
-                this.templates = this.templates.filter(t => t.id !== id);
-                localStorage.setItem('clienthub_custom_templates', JSON.stringify(this.templates));
-            }
-        }
-    }
-}
-</script>
-
+                    <div
+                        class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col items-center justify-center space-y-3">
+                        <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Scan to
+                            Connect</span>
+                        <div id="qrcode-container"
+                            class="bg-white p-2.5 rounded-xl shadow-inner flex items-center justify-center"></div>
+                    </div>
+                </div>
 
                 <!-- Tab 3: Sequential Queue Dispatch -->
                 <div x-show="activeTab === 'broadcast'" x-cloak
@@ -986,47 +740,40 @@ function customTemplateManager() {
             </div>
         </div>
     </div>
+
+    <!-- Global Helper & Parser Functions -->
     <script>
         /**
-        * Parses raw text from Tesseract.js into structured contact fields.
-        * @param {string} rawText - The raw string output from Tesseract OCR.
-        * @returns {Object} - Structured object containing Name, Business, Phone, Email, and Niche.
-        */
+         * Parses raw text from Tesseract.js into structured contact fields.
+         * @param {string} rawText - The raw string output from Tesseract OCR.
+         * @returns {Object} - Structured object containing Name, Business, Phone, Email, and Niche.
+         */
         function parseBusinessCardText(rawText) {
-            // 1. Clean and split text into clean non-empty lines
-            const lines = rawText
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0);
+            const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 
             let result = {
                 name: '',
                 business: '',
                 phone: '',
                 email: '',
-                Niche: 'General' // Default fallback
+                niche: 'General'
             };
 
-            // 2. Extract Email using standard Regex
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             const foundEmails = rawText.match(emailRegex);
             if (foundEmails && foundEmails.length > 0) {
-                result.email = foundEmails[0]; // Take the first valid email found
+                result.email = foundEmails[0];
             }
 
-            // 3. Extract Phone Number using flexible international/local Regex
-            // Matches patterns like +91 98765 43210, (040) 1234567, 9876543210
             const phoneRegex = /(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{2,4}\)?[\s-]?)?\d{3,5}[\s-]?\d{4,6}/g;
             const foundPhones = rawText.match(phoneRegex);
             if (foundPhones && foundPhones.length > 0) {
-                // Filter out strings that look like zip codes or years (must have at least 7 digits)
                 const validPhone = foundPhones.find(p => p.replace(/\D/g, '').length >= 7);
                 if (validPhone) {
                     result.phone = validPhone.trim();
                 }
             }
 
-            // 4. Exclude noise lines for heuristics (lines containing emails, phones, or URLs)
             const filteredLines = lines.filter(line => {
                 return !emailRegex.test(line) &&
                     !phoneRegex.test(line) &&
@@ -1034,10 +781,7 @@ function customTemplateManager() {
                     !line.toLowerCase().includes('www');
             });
 
-            // 5. Heuristic: Extract Business Name
-            // Usually contains corporate suffixes or is found near the top/bottom
-            const corporateKeywords =
-                /\b(pvt|ltd|llp|inc|corp|solutions|enterprises|industries|services|traders|agency|studio|group)\b/i;
+            const corporateKeywords = /\b(pvt|ltd|llp|inc|corp|solutions|enterprises|industries|services|traders|agency|studio|group)\b/i;
 
             for (let line of filteredLines) {
                 if (corporateKeywords.test(line)) {
@@ -1045,134 +789,41 @@ function customTemplateManager() {
                     break;
                 }
             }
-            // Fallback if no corporate keyword matched: pick the longest uppercase/title case line near the top
             if (!result.business && filteredLines.length > 1) {
                 result.business = filteredLines.find(l => l.length > 5 && l !== result.name) || '';
             }
 
-            // 6. Heuristic: Extract Person Name (Process of elimination)
-            // Names usually do not contain numbers, email symbols, or corporate tags, and are 2-4 words.
-            const skipKeywords = new RegExp(corporateKeywords.source +
-                '|manager|director|ceo|cto|founder|owner|lead|sales|consultant|ph\\.|md\\.', 'i');
+            const skipKeywords = new RegExp(corporateKeywords.source + '|manager|director|ceo|cto|founder|owner|lead|sales|consultant|ph\\.|md\\.', 'i');
 
             for (let line of filteredLines) {
                 if (skipKeywords.test(line)) continue;
                 if (line === result.business) continue;
-
-                // Check if line contains digits or symbols
                 if (/[0-9@#&+=_%]/.test(line)) continue;
 
                 const words = line.split(/\s+/);
-                if (words.length >= 2 && words.length <= 4 && line.length < 35) { result.name = line; break; }
-            } // Fallback name if
-        strict filter fails: take the very first clean line if (!result.name && filteredLines.length > 0) {
+                if (words.length >= 2 && words.length <= 4 && line.length < 35) {
+                    result.name = line;
+                    break;
+                }
+            }
+            if (!result.name && filteredLines.length > 0) {
                 result.name = filteredLines[0];
             }
 
-            // 7. Heuristic: Categorize Niche based on keyword matching
-            result.Niche = inferNicheFromText(rawText);
-
+            result.niche = inferNicheFromText(rawText);
             return result;
         }
 
-        /**
-        * Heuristic helper to categorize the business niche based on keywords.
-        */
         function inferNicheFromText(text) {
             const lowerText = text.toLowerCase();
-
-            if (/pharm|med|clinic|health|hospital|dr\.|doctor|chemist/.test(lowerText)) return 'Healthcare / Pharmacy';
-            if (/retail|store|shop|mart|garment|fashion|apparel/.test(lowerText)) return 'Retail / Shop';
-            if (/wholesale|distributor|suppli|export|import|bulk/.test(lowerText)) return 'Wholesale / Distribution';
+            if (/pharm|med|clinic|health|hospital|dr\.|doctor|chemist/.test(lowerText)) return 'Pharmacies';
+            if (/retail|store|shop|mart|garment|fashion|apparel/.test(lowerText)) return 'Retail & Kirana';
+            if (/wholesale|distributor|suppli|export|import|bulk/.test(lowerText)) return 'Wholesalers';
             if (/tech|software|IT|digital|web|cyber|computer/.test(lowerText)) return 'Technology / IT';
             if (/build|construct|real estate|property|infra|architect/.test(lowerText)) return 'Real Estate / Construction';
             if (/food|cafe|restaurant|hotel|bakers|catering/.test(lowerText)) return 'Food & Hospitality';
-
-            return 'General / Services';
+            return 'Retail & Kirana';
         }
-
-
-        /**
-        * Preprocesses a captured camera image and runs Tesseract.js OCR.
-        * @param {File | Blob} imageFile - The image file captured from the device camera.
-        * @returns {Promise<string>} - The raw extracted text from the card.
-            */
-        async function scanBusinessCard(imageFile) {
-            try {
-                console.log("Step 1: Loading image into canvas for preprocessing...");
-                const processedImageUrl = await preprocessImageForOCR(imageFile);
-
-                console.log("Step 2: Initializing Tesseract worker...");
-                // Initialize Tesseract worker for English (add other language codes if needed, e.g., 'eng+hin')
-                const worker = await Tesseract.createWorker('eng');
-
-                console.log("Step 3: Running OCR on processed image...");
-                const { data: { text } } = await worker.recognize(processedImageUrl);
-
-                // Terminate worker to free up mobile browser memory
-                await worker.terminate();
-
-                console.log("OCR Extraction Complete!");
-                return text;
-
-            } catch (error) {
-                console.error("OCR Scanning failed:", error);
-                throw error;
-            }
-        }
-
-        /**
-        * Preprocessing helper: Converts image to high-contrast grayscale to remove background noise.
-        */
-        function preprocessImageForOCR(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        // Resize image for optimal OCR speed (max width 1200px preserves fine text details)
-                        const maxWidth = 1200;
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        // Draw image onto canvas
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // Get image pixel data for manipulation
-                        const imgData = ctx.getImageData(0, 0, width, height);
-                        const data = imgData.data;
-
-                        // Apply Grayscale & Contrast Boosting (Thresholding effect)
-                        const contrastFactor = 1.5; // Adjust contrast multiplier (>1 increases contrast)
-
-                        for (let i = 0; i < data.length; i += 4) { // Convert RGB to weighted grayscale let gray=0.299 * data[i] +
-                            0.587 * data[i + 1] + 0.114 * data[i + 2]; // Boost contrast around midtone (128)
-                            gray = facteurContrast(gray, contrastFactor); data[i] = gray; // Red data[i + 1]=gray; // Green data[i +
-                            2]=gray; // Blue // Alpha channel (data[i+3]) remains untouched } // Put modified pixels back onto
-                canvas ctx.putImageData(imgData, 0, 0); // Export as clean JPEG data URL
-                            resolve(canvas.toDataURL('image/jpeg', 0.9));
-                        }; img.onerror = reject; img.src = event.target.result;
-                    };
-                    reader.onerror = reject; reader.readAsDataURL(file);
-                });
-        }
-
-        // Helper function for contrast adjustment
-        function facteurContrast(value, factor) {
-            let newVal = factor * (value - 128) + 128; return newVal < 0 ? 0
-                : newVal > 255 ? 255 : newVal;
-        }
-
     </script>
 
     <!-- Application Script -->
@@ -1190,13 +841,11 @@ function customTemplateManager() {
                 showPreviewModal: false,
                 rawFile: null,
 
-
                 editingLeadModal: false,
                 editingLead: null,
-                legalModal: false, // Added state for legal modal
+                legalModal: false,
                 logs: [],
                 leads: [],
-
 
                 // Pitch Templates State
                 selectedTemplateId: 'kirana',
@@ -1238,11 +887,6 @@ function customTemplateManager() {
                 notesModal: false,
                 activeLeadForNotes: null,
 
-                editingLeadModal: false,
-                editingLead: null,
-                logs: [],
-                leads: [],
-
                 defaultLeads: [
                     { id: 1, name: 'Sudhagani', business: 'MOKSHA', phone: '+91 82699 00555', email: 'sudhagani@moksha.com', city: 'Local', niche: 'Services & CAs', status: 'New', notes: 'Interested in thermal printer demo', followUpDate: '2026-06-10' },
                     { id: 2, name: 'Datta', business: 'Heritage', phone: '+91 79090 30461', email: 'sales@heritage.in', city: 'Local', niche: 'Services & CAs', status: 'New', notes: '', followUpDate: '' },
@@ -1255,7 +899,6 @@ function customTemplateManager() {
                     this.loadTemplatesFromStorage();
                     this.loadLeadsFromStorage();
                 },
-
 
                 loadTemplatesFromStorage() {
                     const saved = localStorage.getItem('vyapar_pitch_templates');
@@ -1734,70 +1377,17 @@ function customTemplateManager() {
                         });
 
                         this.logs.push(`[OCR Extracted]: "${text.substring(0, 60)}..."`);
-                        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-
-                        const phoneMatch = text.match(/(?:Ph|Mob|Tel|Mobile)?[\s\:\-\.]*(\+?91[\-\s]?)?[6-9]\d{9}|\d{5}\s?\d{5}|\d{3,4}[\s\-]\d{6,8}/i);
-                        let phone = '+91 98765 43210';
-                        if (phoneMatch) {
-                            let digits = phoneMatch[0].replace(/[^\d+]/g, '');
-                            if (digits.length === 10) phone = '+91 ' + digits;
-                            else if (digits.length > 10) phone = '+' + digits.slice(-12);
-                        }
-
-                        let email = '';
-                        const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
-                        if (emailMatch) email = emailMatch[0].toLowerCase();
-
-                        let business = 'Local Business';
-                        const domainMatch = text.match(/(?:www\.)?([a-zA-Z0-9\-]+)\.(?:com|in|org|net)/i);
-                        const ignoredDomains = ['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'rediffmail', 'aol'];
-
-                        if (domainMatch && domainMatch[1] && !ignoredDomains.includes(domainMatch[1].toLowerCase())) {
-                            let cleanBrand = domainMatch[1].replace(/([A-Z])/g, ' $1').trim();
-                            business = cleanBrand.charAt(0).toUpperCase() + cleanBrand.slice(1) + " DMC";
-                        } else {
-                            const businessLine = lines.find(l => /resort|spa|hotel|hospitality|pvt|ltd|industries|enterprises|tours|dmc|travel|agency/i.test(l) && !/@/i.test(l));
-                            if (businessLine) business = businessLine;
-                            else {
-                                const validLine = lines.find(l => !/sales team|director|manager|ph|www|@/i.test(l) && l.length > 4 && !/\d/.test(l));
-                                if (validLine) business = validLine;
-                            }
-                        }
-
-                        business = business.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '').trim();
-                        if (!business || business.length < 2) business = 'Local Business';
-
-                        let name = 'Card Lead';
-                        const nameLine = lines.find(l => !/sales team|director|manager|ph|www|@|p\.o\.|district/i.test(l) && l.length > 3 && !/\d/.test(l));
-                        if (nameLine) name = nameLine;
-
-                        let city = 'Local';
-                        if (/munnar/i.test(text)) city = 'Munnar';
-                        else if (/dubai/i.test(text)) city = 'Dubai';
-                        else if (/mumbai/i.test(text)) city = 'Mumbai';
-                        else if (/delhi/i.test(text)) city = 'Delhi';
-                        else if (/pune/i.test(text)) city = 'Pune';
-                        else if (/varanasi/i.test(text)) city = 'Varanasi';
-                        else if (/india/i.test(text)) city = 'India Operations';
-
-                        let niche = 'Retail & Kirana';
-                        if (/dmc|trip|travel|tour|holiday|resort|spa|hotel|hospitality|tourism|service|CA|consultant/i.test(text)) {
-                            niche = 'Services & CAs';
-                        } else if (/pharm|chemist|medical/i.test(text)) {
-                            niche = 'Pharmacies';
-                        } else if (/wholesale|distributor|agency/i.test(text)) {
-                            niche = 'Wholesalers';
-                        }
+                        const parsedData = parseBusinessCardText(text);
 
                         const newId = this.leads.length > 0 ? Math.max(...this.leads.map(l => Number(l.id) || 0)) + 1 : 1;
                         const newLead = {
                             id: newId,
-                            name: name,
-                            business: business,
-                            phone: phone,
-                            email: email,
-                            city: city,
-                            niche: niche,
+                            name: parsedData.name || 'Card Lead',
+                            business: parsedData.business || 'Local Business',
+                            phone: parsedData.phone || '+91 98765 43210',
+                            email: parsedData.email || '',
+                            city: 'Local',
+                            niche: parsedData.niche || 'Retail & Kirana',
                             status: 'New',
                             notes: '',
                             followUpDate: ''
@@ -1896,7 +1486,134 @@ function customTemplateManager() {
                 }
             }
         }
+
+        // Live OCR Fine-Tuning Pipeline Alpine Component
+        function ocrPipelineApp() {
+            return {
+                contrast: 1.5,
+                maxWidth: 1200,
+                rawImageFile: null,
+                isProcessing: false,
+                ocrResult: null,
+
+                handleImageUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    this.rawImageFile = file;
+                    this.reprocessCanvas();
+                },
+
+                reprocessCanvas() {
+                    if (!this.rawImageFile) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.getElementById('ocrCanvas');
+                            if (!canvas) return;
+                            const ctx = canvas.getContext('2d');
+
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > this.maxWidth) {
+                                height = Math.round((height * this.maxWidth) / width);
+                                width = this.maxWidth;
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            const imgData = ctx.getImageData(0, 0, width, height);
+                            const data = imgData.data;
+                            const factor = this.contrast;
+
+                            for (let i = 0; i < data.length; i += 4) {
+                                let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                                let contrasted = factor * (gray - 128) + 128;
+                                contrasted = Math.max(0, Math.min(255, contrasted));
+
+                                data[i] = contrasted;
+                                data[i + 1] = contrasted;
+                                data[i + 2] = contrasted;
+                            }
+
+                            ctx.putImageData(imgData, 0, 0);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(this.rawImageFile);
+                },
+
+                async runOCR() {
+                    const canvas = document.getElementById('ocrCanvas');
+                    if (!canvas || !canvas.width || !this.rawImageFile) {
+                        alert('Please upload an image first.');
+                        return;
+                    }
+
+                    this.isProcessing = true;
+                    try {
+                        const processedImageUrl = canvas.toDataURL('image/png');
+                        const result = await Tesseract.recognize(
+                            processedImageUrl,
+                            'eng',
+                            { logger: m => console.log(m) }
+                        );
+
+                        const rawText = result.data.text;
+                        this.ocrResult = parseBusinessCardText(rawText);
+                    } catch (error) {
+                        console.error('OCR Error:', error);
+                        alert('OCR processing failed. Check console for details.');
+                    } finally {
+                        this.isProcessing = false;
+                    }
+                }
+            }
+        }
+
+        // QR Code Generator Component
+        function qrCardGenerator() {
+            return {
+                qrInstance: null,
+                form: {
+                    name: 'Vinay Bhagat',
+                    phone: '+919876543210',
+                    link: 'https://vinaybhagatd.github.io/vyapar-crm/landing.html'
+                },
+
+                initQR() {
+                    const container = document.getElementById('qrcode-container');
+                    if (!container) return;
+                    container.innerHTML = '';
+
+                    this.qrInstance = new QRCode(container, {
+                        text: this.getPayloadString(),
+                        width: 160,
+                        height: 160,
+                        colorDark: "#0f172a",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                },
+
+                getPayloadString() {
+                    const cleanPhone = this.form.phone.replace(/\D/g, '');
+                    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi ${this.form.name}, let's connect! Checked your profile via ClientHub: ${this.form.link}`)}`;
+                },
+
+                generateQR() {
+                    if (!this.qrInstance) return;
+                    const payload = this.getPayloadString();
+                    this.qrInstance.makeCode(payload);
+                }
+            }
+        }
     </script>
+
     <!-- Service Worker Registration for PWA Offline Support -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -1907,7 +1624,6 @@ function customTemplateManager() {
             });
         }
     </script>
-
 
     <!-- Legal Modal Component -->
     <div x-show="legalModal" x-cloak
@@ -1926,37 +1642,27 @@ function customTemplateManager() {
             <div class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2 leading-relaxed">
                 <div>
                     <h4 class="font-bold text-white mb-1">1. Privacy Policy & Local Storage</h4>
-                    <p>ClientHub operates on a local-first architecture. All lead CRM records, follow-up
-                        reminder notes,
+                    <p>ClientHub operates on a local-first architecture. All lead CRM records, follow-up reminder notes,
                         and pitch templates are stored securely in your browser's local storage
-                        (<code>localStorage</code>). We do not collect, transmit, or store your personal
-                        client
-                        data on
+                        (<code>localStorage</code>). We do not collect, transmit, or store your personal client data on
                         external servers.</p>
                 </div>
                 <div>
                     <h4 class="font-bold text-white mb-1">2. Hardware & Permission Disclosures</h4>
                     <p>ClientHub requests temporary hardware access solely for core productivity features:
                         <strong>Microphone</strong> access for the Voice Wizard speech recognition, and
-                        <strong>Camera</strong> access for Visiting Card OCR scanning. Audio and image
-                        processing occur
-                        client-side on your device in real-time.
-                    </p>
+                        <strong>Camera</strong> access for Visiting Card OCR scanning. Audio and image processing occur
+                        client-side on your device in real-time.</p>
                 </div>
                 <div>
                     <h4 class="font-bold text-white mb-1">3. Terms of Service & Acceptable Use</h4>
-                    <p>By using ClientHub, you agree to use the application responsibly for legitimate sales
-                        automation,
-                        CRM management, and customer outreach. You retain 100% ownership of your exported
-                        CSV
-                        data.</p>
+                    <p>By using ClientHub, you agree to use the application responsibly for legitimate sales automation,
+                        CRM management, and customer outreach. You retain 100% ownership of your exported CSV data.</p>
                 </div>
                 <div>
                     <h4 class="font-bold text-white mb-1">4. Intellectual Property & Copyright Notice</h4>
-                    <p>© 2026 ClientHub. All Rights Reserved. The software architecture, source code, UI/UX
-                        design, and
-                        master icon (<code>Icon-ClientHub-v1.1.png</code>) are proprietary assets protected
-                        under
+                    <p>© 2026 ClientHub. All Rights Reserved. The software architecture, source code, UI/UX design, and
+                        master icon (<code>Icon-ClientHub-v1.1.png</code>) are proprietary assets protected under
                         international copyright laws.</p>
                 </div>
             </div>
@@ -1970,18 +1676,15 @@ function customTemplateManager() {
     </div>
 
     <!-- Footer with Working Trigger -->
-    <footer class="mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-800">
+    <footer
+        class="mt-auto py-4 text-center text-xs text-slate-500 border-t border-slate-800 flex items-center justify-center gap-3">
         <span>ClientHub v5.0 • All Rights Reserved.</span>
-        <span class="mx-2">•</span>
-        <button @click="legalModal = true" class="text-brand-400 hover:underline cursor-pointer">Privacy &
-            Legal
+        <span>•</span>
+        <button @click="legalModal = true" class="text-brand-400 hover:underline cursor-pointer">Privacy & Legal
             Terms</button>
+        <span>•</span>
+        <a href="./landing.html" class="text-brand-400 hover:underline">← Product Overview</a>
     </footer>
-
-
-    <a href="./landing.html" class="text-xs text-slate-400 hover:text-slate-200 transition">
-        ← Product Overview
-    </a>
 
 </body>
 
