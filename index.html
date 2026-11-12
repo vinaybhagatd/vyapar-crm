@@ -394,6 +394,40 @@
         </button>
     </div>
 
+<div x-data="ocrFineTuningApp()" class="max-w-2xl mx-auto p-6 bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-xl my-6">
+    <h3 class="text-lg font-bold text-white mb-1">🎛️ OCR Preprocessing Fine-Tuner</h3>
+    <p class="text-xs text-slate-400 mb-4">Adjust canvas parameters in real time to optimize Tesseract.js recognition for difficult cards.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Contrast Factor: <span class="font-mono text-blue-400" x-text="contrast"></span></label>
+            <input type="range" min="0.8" max="2.5" step="0.1" x-model.number="contrast" class="w-full accent-blue-500">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Max Width: <span class="font-mono text-blue-400" x-text="maxWidth + 'px'"></span></label>
+            <input type="range" min="600" max="1600" step="100" x-model.number="maxWidth" class="w-full accent-blue-500">
+        </div>
+    </div>
+
+    <!-- Live Preview Code Snippet -->
+    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <span class="text-xs font-bold text-emerald-400 block mb-2">Generated Configuration Function:</span>
+        <pre class="text-xs font-mono text-slate-300 whitespace-pre-wrap" x-text="getSnippet()"></pre>
+    </div>
+</div>
+
+<script>
+function ocrFineTuningApp() {
+    return {
+        contrast: 1.5,
+        maxWidth: 1200,
+        getSnippet() {
+            return `const contrastFactor = ${this.contrast};\nconst maxWidth = ${this.maxWidth};\n// Pass into your preprocessImageForOCR(file, contrastFactor, maxWidth) function`;
+        }
+    }
+}
+</script>
+
 <div x-data="qrCardGenerator()" x-init="initQR()" class="max-w-md mx-auto p-6 bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-2xl mt-6">
     
     <div class="flex items-center gap-3 mb-4">
