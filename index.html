@@ -748,32 +748,31 @@
          * @param {string} rawText - The raw string output from Tesseract OCR.
          * @returns {Object} - Structured object containing Name, Business, Phone, Email, and Niche.
          */
+        // Global Helper: Parses raw OCR text from visiting cards
         function parseBusinessCardText(rawText) {
-            const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
             let result = {
                 name: '',
                 business: '',
                 phone: '',
                 email: '',
-                niche: 'General'
+                niche: 'Retail & Kirana'
             };
 
+            // 1. Extract Email using Regex
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             const foundEmails = rawText.match(emailRegex);
             if (foundEmails && foundEmails.length > 0) {
                 result.email = foundEmails[0];
             }
 
-            // Replace your existing phone extraction logic inside parseBusinessCardText(rawText):
+            // 2. Extract Phone Number using Indian Mobile / Landline Regex
             const phoneRegex = /(?:\+?91[\-\s]?)?[6-9]\d{9}|\b\d{5}[\s\-]?\d{5}\b|\b\d{3,4}[\s\-]\d{6,8}\b/g;
             const foundPhones = rawText.match(phoneRegex);
-
             if (foundPhones && foundPhones.length > 0) {
-                // Clean and take the first valid phone candidate
                 let rawPhone = foundPhones[0].trim();
                 let digits = rawPhone.replace(/[^\d+]/g, '');
-
                 if (digits.length === 10) {
                     result.phone = '+91 ' + digits;
                 } else if (digits.length > 10) {
@@ -782,54 +781,43 @@
                     result.phone = rawPhone;
                 }
             } else {
-                result.phone = '+91 98765 43210'; // Fallback
+                result.phone = '+91 98765 43210';
             }
-        }
 
-        const filteredLines = lines.filter(line => {
-            return !emailRegex.test(line) &&
-                !phoneRegex.test(line) &&
-                !line.toLowerCase().includes('http') &&
-                !line.toLowerCase().includes('www');
-        });
+            // 3. Extract Name & Business heuristically from lines
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                // Skip lines containing phone, email, or address keywords
+                if (line.includes('@') || phoneRegex.test(line) || line.toLowerCase().includes('opp.') || line.toLowerCase().includes('shop')) {
+                    continue;
+                }
 
-        const corporateKeywords = /\b(pvt|ltd|llp|inc|corp|solutions|enterprises|industries|services|traders|agency|studio|group)\b/i;
+                // Pick the first clean text line as Name if not set
+                if (!result.name && line.length > 3 && line.length < 30) {
+                    result.name = line;
+                    continue;
+                }
 
-        for (let line of filteredLines) {
-            if (corporateKeywords.test(line)) {
-                result.business = line;
-                break;
+                // Pick the next major line as Business name
+                if (!result.business && line.length > 3 && line !== result.name) {
+                    result.business = line;
+                }
             }
-        }
-        if (!result.business && filteredLines.length > 1) {
-            result.business = filteredLines.find(l => l.length > 5 && l !== result.name) || '';
-        }
 
-        const skipKeywords = new RegExp(corporateKeywords.source + '|manager|director|ceo|cto|founder|owner|lead|sales|consultant|ph\\.|md\\.', 'i');
+            if (!result.name) result.name = 'Business Contact';
+            if (!result.business) result.business = 'Local Enterprise';
 
-        for (let line of filteredLines) {
-            if (skipKeywords.test(line)) continue;
-            if (line === result.business) continue;
-            if (/[0-9@#&+=_%]/.test(line)) continue;
+            // 4. Automatically infer niche classification
+            result.niche = inferNicheFromText(rawText);
 
-            const words = line.split(/\s+/);
-            if (words.length >= 2 && words.length <= 4 && line.length < 35) {
-                result.name = line;
-                break;
-            }
-        }
-        if (!result.name && filteredLines.length > 0) {
-            result.name = filteredLines[0];
+            return result;
         }
 
-        result.niche = inferNicheFromText(rawText);
-        return result;
-        }
-
+        // Helper: Infers SME industry niche category from text keywords
         function inferNicheFromText(text) {
             const lowerText = text.toLowerCase();
             if (/pharm|med|clinic|health|hospital|dr\.|doctor|chemist/.test(lowerText)) return 'Pharmacies';
-            if (/retail|store|shop|mart|garment|fashion|apparel/.test(lowerText)) return 'Retail & Kirana';
+            if (/retail|store|shop|mart|garment|fashion|apparel|electrical/.test(lowerText)) return 'Retail & Kirana';
             if (/wholesale|distributor|suppli|export|import|bulk/.test(lowerText)) return 'Wholesalers';
             if (/tech|software|IT|digital|web|cyber|computer/.test(lowerText)) return 'Technology / IT';
             if (/build|construct|real estate|property|infra|architect/.test(lowerText)) return 'Real Estate / Construction';
@@ -837,7 +825,6 @@
             return 'Retail & Kirana';
         }
     </script>
-
     <!-- Application Script -->
     <script>
         function whatsappApp() {
