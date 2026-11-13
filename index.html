@@ -1496,6 +1496,7 @@
                 rawImageFile: null,
                 isProcessing: false,
                 ocrResult: null,
+                scanStatusText: '',
 
                 handleImageUpload(event) {
                     const file = event.target.files[0];
@@ -1505,169 +1506,136 @@
                 },
 
                 reprocessCanvas() {
-                    if (!this.rawImageFile) return;
+                    // Default preview uses normal preprocessing (isInverted = false)
+                    this.processCanvasImage(false).then(dataUrl => {
+                        // Preview updated via helper
+                    });
+                },
 
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.getElementById('ocrCanvas');
-                            if (!canvas) return;
-                            const ctx = canvas.getContext('2d');
+                // Helper that generates processed canvas data URL (supports normal or inverted mode)
+                processCanvasImage(isInverted) {
+                    return new Promise((resolve, reject) => {
+                        if (!this.rawImageFile) return reject('No file');
 
-                            // 1. Resolution Normalization (Max Width)
-                            let width = img.width;
-                            let height = img.height;
-                            if (width > this.maxWidth) {
-                                height = Math.round((height * this.maxWidth) / width);
-                                width = this.maxWidth;
-                            }
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
 
-                            canvas.width = width;
-                            canvas.height = height;
-                            ctx.drawImage(img, 0, 0, width, height);
+                                let width = img.width;
+                                let height = img.height;
+                                if (width > this.maxWidth) {
+                                    height = Math.round((height * this.maxWidth) / width);
+                                    width = this.maxWidth;
+                                }
 
-                            let imgData = ctx.getImageData(0, 0, width, height);
+                                canvas.width = width;
+                                canvas.height = height;
+                                ctx.drawImage(img, 0, 0, width, height);
 
-                            // 2. TECHNIQUE 1: Deskewing / Rotation Alignment
-                            imgData = this.applyDeskew(imgData, ctx, width, height);
+                                const imgData = ctx.getImageData(0, 0, width, height);
+                                const data = imgData.data;
+                                const factor = this.contrast;
 
-                            // 3. TECHNIQUE 2: Adaptive Thresholding (Binarization)
-                            imgData = this.applyAdaptiveThreshold(imgData, 15, 10); // blockSize = 15, C = 10
+                                for (let i = 0; i < data.length; i += 4) {
+                                    let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
 
-                            // 4. TECHNIQUE 3: Despeckling & Noise Removal (Median Filter)
-                            imgData = this.applyDespeckle(imgData, width, height);
+                                    // Automatically invert colors if requested (for dark background cards)
+                                    if (isInverted) {
+                                        gray = 255 - gray;
+                                    }
 
-                            // Render final preprocessed result onto canvas for Tesseract
-                            ctx.putImageData(imgData, 0, 0);
+                                    let contrasted = factor * (gray - 128) + 128;
+                                    contrastred = Math.max(0, Math.min(255, contrasted));
+
+                                    data[i] = contrasted;
+                                    data[i + 1] = contrasted;
+                                    data[i + 2] = contrasted;
+                                }
+
+                                ctx.putImageData(imgData, 0, 0);
+
+                                // If this is the normal pass, update the visible preview canvas too
+                                if (!isInverted) {
+                                    const visibleCanvas = document.getElementById('ocrCanvas');
+                                    if (visibleCanvas) {
+                                        visibleCanvas.width = width;
+                                        visibleCanvas.height = height;
+                                        visibleCanvas.getContext('2d').putImageData(imgData, 0, 0);
+                                    }
+                                }
+
+                                resolve(canvas.toDataURL('image/png'));
+                            };
+                            img.onerror = reject;
+                            img.src = e.target.result;
                         };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(this.rawImageFile);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(this.rawImageFile);
+                    });
                 },
 
-                // 1. Deskewing Mock/Stub (Aligns baseline orientation)
-                applyDeskew(imgData, ctx, width, height) {
-                    // Real-world angle estimation uses projection profiles; 
-                    // Here we ensure standard scaling and return baseline image data cleanly rotated if skew detected.
-                    return imgData;
-                },
-
-                // 2. Adaptive Thresholding (Handles uneven shadows/lighting locally)
-                applyAdaptiveThreshold(imgData, blockSize, c) {
-                    const width = imgData.width;
-                    const height = imgData.height;
-                    const data = imgData.data;
-                    const output = new ImageData(width, height);
-                    const outData = output.data;
-
-                    // Convert to Grayscale first
-                    const gray = new Uint8Array(width * height);
-                    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-                        gray[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                    }
-
-                    const halfBlock = Math.floor(blockSize / 2);
-
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            const idx = y * width + x;
-                            let sum = 0;
-                            let count = 0;
-
-                            // Calculate local neighborhood mean intensity
-                            for (let dy = -halfBlock; dy <= halfBlock; dy++) {
-                                for (let dx = -halfBlock; dx <= halfBlock; dx++) {
-                                    let nx = x + dx;
-                                    let ny = y + dy;
-                                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                                        sum += gray[ny * width + nx];
-                                        count++;
-                                    }
-                                }
-                            }
-
-                            const threshold = (sum / count) - c;
-                            const pIdx = idx * 4;
-                            const val = gray[idx] < threshold ? 0 : 255; // Pure black or white
-
-                            outData[pIdx] = val;
-                            outData[pIdx + 1] = val;
-                            outData[pIdx + 2] = val;
-                            outData[pIdx + 3] = 255;
-                        }
-                    }
-                    return output;
-                },
-
-                // 3. Despeckling / Noise Removal (Clears stray camera artifacts and paper specks)
-                applyDespeckle(imgData, width, height) {
-                    const data = imgData.data;
-                    const output = new ImageData(width, height);
-                    const outData = output.data;
-
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            const idx = (y * width + x) * 4;
-
-                            // Simple 3x3 pixel neighborhood filter check
-                            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
-                                let blackNeighbors = 0;
-                                for (let dy = -1; dy <= 1; dy++) {
-                                    for (let dx = -1; dx <= 1; dx++) {
-                                        if (dx === 0 && dy === 0) continue;
-                                        const nIdx = ((y + dy) * width + (x + dx)) * 4;
-                                        if (data[nIdx] === 0) blackNeighbors++;
-                                    }
-                                }
-                                // Remove isolated single black speckles (noise)
-                                if (data[idx] === 0 && blackNeighbors < 1) {
-                                    outData[idx] = 255;
-                                    outData[idx + 1] = 255;
-                                    outData[idx + 2] = 255;
-                                } else {
-                                    outData[idx] = data[idx];
-                                    outData[idx + 1] = data[idx + 1];
-                                    outData[idx + 2] = data[idx + 2];
-                                }
-                            } else {
-                                outData[idx] = data[idx];
-                                outData[idx + 1] = data[idx + 1];
-                                outData[idx + 2] = data[idx + 2];
-                            }
-                            outData[idx + 3] = 255;
-                        }
-                    }
-                    return output;
-                },
-
+                // Automated Two-Pass OCR Scanning with Fallback Inversion
                 async runOCR() {
-                    const canvas = document.getElementById('ocrCanvas');
-                    if (!canvas || !canvas.width || !this.rawImageFile) {
+                    if (!this.rawImageFile) {
                         alert('Please upload an image first.');
                         return;
                     }
 
                     this.isProcessing = true;
                     try {
-                        const processedImageUrl = canvas.toDataURL('image/png');
-                        const result = await Tesseract.recognize(
-                            processedImageUrl,
+                        // --- PASS 1: Standard Processing ---
+                        this.scanStatusText = 'Running primary OCR scan...';
+                        let normalImageUrl = await this.processCanvasImage(false);
+
+                        let result = await Tesseract.recognize(
+                            normalImageUrl,
                             'eng',
-                            { logger: m => console.log(m) }
+                            { logger: m => { if (m.status === 'recognizing text') this.scanStatusText = `Scan 1: ${Math.round(m.progress * 100)}%`; } }
                         );
 
-                        const rawText = result.data.text;
+                        let rawText = result.data.text;
+                        let confidence = result.data.confidence;
+                        console.log(`Primary OCR Confidence: ${confidence}%`);
+
+                        // --- PASS 2: Automatic Fallback Inversion if Confidence < 40% ---
+                        if (confidence < 40) {
+                            this.scanStatusText = 'Low confidence. Auto-inverting for dark card scan...';
+                            console.log('Confidence below 40%. Triggering automatic color inversion fallback pass...');
+
+                            let invertedImageUrl = await this.processCanvasImage(true); // isInverted = true
+                            let retryResult = await Tesseract.recognize(
+                                invertedImageUrl,
+                                'eng',
+                                { logger: m => { if (m.status === 'recognizing text') this.scanStatusText = `Scan 2 (Inverted): ${Math.round(m.progress * 100)}%`; } }
+                            );
+
+                            console.log(`Inverted OCR Confidence: ${retryResult.data.confidence}%`);
+
+                            // If inversion yielded better results, adopt them
+                            if (retryResult.data.confidence > confidence) {
+                                rawText = retryResult.data.text;
+                                confidence = retryResult.data.confidence;
+                                console.log('Successfully switched to inverted scan results.');
+                            }
+                        }
+
+                        // Pass final extracted text to regex parser
                         this.ocrResult = parseBusinessCardText(rawText);
+
                     } catch (error) {
                         console.error('OCR Error:', error);
                         alert('OCR processing failed. Check console for details.');
                     } finally {
                         this.isProcessing = false;
+                        this.scanStatusText = '';
                     }
                 }
             }
         }
+
         // QR Code Generator Component
         function qrCardGenerator() {
             return {
