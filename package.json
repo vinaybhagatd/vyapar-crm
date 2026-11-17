@@ -1,0 +1,24 @@
+{
+  "name": "whatsapp-marketing-and-automation-suite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "ocr.worker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vinaybhagatd/vyapar-crm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/vinaybhagatd/vyapar-crm/issues"
+  },
+  "homepage": "https://github.com/vinaybhagatd/vyapar-crm#readme",
+  "dependencies": {
+    "playwright": "^1.65.1"
+  }
+}
